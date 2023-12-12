@@ -12,6 +12,7 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 //para simular a memoria do IAS devemos alocar um bloco de memoria, como se fosse um vetor
 //char *memory = (char *) malloc(4096 * 5 * sizeof(char));
 
+
 void read_line(char str[], int size, FILE *arq)
 {
         int i = 0;
@@ -28,9 +29,23 @@ void read_line(char str[], int size, FILE *arq)
         str[i] = '\0';
 }
 
+void display_memory_data(char *memory)
+{
+        printf("---------Display memory---------\nData:\n");
+        for (int i = 0; i < 500; i++)
+        {
+                printf("%c\n", *memory);
+                memory += 5;
+        }
+        printf("---------End Display Data---------\n");
+}
+
 int main()
 {
-        char c;
+        char *memory = (char *) malloc(4096 * 5 * sizeof(char));
+        char *aux; 
+        aux = memory;
+        char linha_lida[10];
         FILE *arq;
 
         if ((arq = fopen("texto.txt", "r")) == NULL)
@@ -39,11 +54,21 @@ int main()
                 exit(1);
         }
 
-        while((c = fgetc(arq)) != EOF)
+        //mudar a condicao para a funcao read_line → colocar ela com retorno int afim de testar a condicao
+        while (fgets(linha_lida, 10, arq) != NULL)
         {
-                fputc(c, stdout);
+                *memory = linha_lida[0];
+                for (int i = 1; i < 10; i++)
+                {
+                        //*memory = linha_lida[i]; nao da para fazer assim
+                        //strcat(*memory, linha_lida[i]); nao da tbm
+                }
+                memory += 5;
         }
+        memory = aux; //fazer memory apontar para o inicio da memoria alocada
+        display_memory_data(memory);
 
+        free(memory);
         fclose(arq);
 
         return 0;

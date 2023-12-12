@@ -10,17 +10,20 @@ int main()
     {
         printf("Memoria alocada com sucesso\n");
 
-        printf("\nx: %d", x);
+        printf("\nx: %x", x);
         printf("\nx: %d", *x);
         *x = 50;
         printf("\nx: %d", *x);
         x += 1;
-        printf("\nx: %d", x);
+        printf("\nx: %x", x);
         printf("\nx: %d", *x);
         *x = 100;
         printf("\nx: %d", *x);
         x -= 1;
-        printf("\nx: %d", x);
+        printf("\nx: %x", x);
+        printf("\nx: %d", *x);
+        x += 1;
+        printf("\nx: %x", x);
         printf("\nx: %d", *x);
     }
     else{
