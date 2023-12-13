@@ -9,6 +9,7 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 #include <stdlib.h>
 #include <string.h>
 
+#define BUFFER_SIZE 40
 //para simular a memoria do IAS devemos alocar um bloco de memoria, como se fosse um vetor
 //char *memory = (char *) malloc(4096 * 5 * sizeof(char));
 
@@ -34,7 +35,7 @@ void display_memory_data(char *memory)
         printf("---------Display memory---------\nData:\n");
         for (int i = 0; i < 500; i++)
         {
-                printf("%c\n", *memory);
+                printf("%s\n", *memory);
                 memory += 5;
         }
         printf("---------End Display Data---------\n");
@@ -44,8 +45,8 @@ int main()
 {
         char *memory = (char *) malloc(4096 * 5 * sizeof(char));
         char *aux; 
-        aux = memory;
-        char linha_lida[10];
+        aux = memory; // fazendo aux receber o endereco de inicio da memoria
+        char linha_lida[BUFFER_SIZE];
         FILE *arq;
 
         if ((arq = fopen("texto.txt", "r")) == NULL)
@@ -54,15 +55,10 @@ int main()
                 exit(1);
         }
 
-        //mudar a condicao para a funcao read_line → colocar ela com retorno int afim de testar a condicao
-        while (fgets(linha_lida, 10, arq) != NULL)
+        while (fgets(linha_lida, BUFFER_SIZE, arq) != NULL)
         {
-                *memory = linha_lida[0];
-                for (int i = 1; i < 10; i++)
-                {
-                        //*memory = linha_lida[i]; nao da para fazer assim
-                        //strcat(*memory, linha_lida[i]); nao da tbm
-                }
+                linha_lida[strlen(linha_lida) - 1] = '\0'; //retirando o '\n' da string lida
+                //strcpy(*memory, linha_lida);
                 memory += 5;
         }
         memory = aux; //fazer memory apontar para o inicio da memoria alocada
