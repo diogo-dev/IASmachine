@@ -16,12 +16,31 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 
 void display_memory_data(char **memory)
 {
-    printf("---------Display memory---------\nData:\n");
+    printf("---------Display memory data---------\nData:\n");
     for (int i = 0; i < 500; i++)
     {
         printf("%s\n", memory[i]);
     }
     printf("---------End Display Data---------\n");
+}
+
+void display_memory_instructions(char **memory)
+{
+    printf("---------Display memory instructions---------\nData:\n");
+    for (int i = 501; i < 503; i++)
+    {
+        printf("%s\n", memory[i]);
+    }
+}
+
+void finding_instruction(char *str_lida, int *opcode)
+{
+    if (strcmp(str_lida, "LOAD-MQ")) {
+        *opcode = 5;
+    }
+    else if (strcmp(str_lida, "LOAD-MQ,M(X)")) {
+        *opcode = 10;
+    }
 }
 
 int main()
@@ -45,6 +64,7 @@ int main()
         i++; // equivalente a memory += 5;
     }
     display_memory_data(memory);
+    //display_memory_instructions()
 
     free(memory);
     fclose(arq);
