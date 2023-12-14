@@ -13,6 +13,17 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 // para simular a memoria do IAS devemos alocar um bloco de memoria, como se fosse um vetor
 // char *memory = (char *) malloc(4096 * 5 * sizeof(char));
 
+char finding_addres(char *str_lida, char* no_addres){
+    for(int i=0; i=strlen(str_lida); i++){
+        if(str_lida[i] == '('){
+            return str_lida[i+1];
+        }
+    } 
+    *no_addres = "000000000000";
+    return 0;
+}
+
+
 long int decoder(long int number)
 {
     int number_size = 0;
@@ -133,9 +144,12 @@ void finding_instruction(char *str_lida, char *opcode)
     else if (strcmp(str_lida, "STOR-M(X,8:19)") == 0) {
         strcpy(opcode, "00010010");
     }
-    
+
     else if (strcmp(str_lida, "STOR-M(X,28:39)") == 0) {
         strcpy(opcode, "00010011");
+    }
+    else if (strcmp(str_lida, "EXIT") == 0) {
+        strcpy(opcode, "11111111");
     }
 }
 
@@ -144,7 +158,7 @@ int main()
     char **memory = (char **)malloc(4096 * sizeof(char *));
     char linha_lida[BUFFER_SIZE];
     FILE *arq;
-    char *opcode;
+    char *opcode[9];
 
     if ((arq = fopen("texto.txt", "r")) == NULL)
     {
@@ -163,11 +177,14 @@ int main()
 
     display_memory_data(memory);
     display_memory_instructions(memory);
-    /*printf("%d\n", *opcode);
+    printf("%s\n", opcode);
     finding_instruction(memory[500], opcode);
-    printf("%d\n", *opcode);
+    printf("%s\n", opcode);
     finding_instruction(memory[501], opcode);
-    printf("%d\n", *opcode);*/
+    printf("%s\n", opcode);
+
+    //char *trash;
+    //printf("%d", (strtol(opcode, &trash, 2)));
 
     free(memory);
     fclose(arq);
