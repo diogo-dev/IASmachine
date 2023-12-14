@@ -79,6 +79,64 @@ void finding_instruction(char *str_lida, char *opcode)
     else if (strcmp(str_lida, "LOAD-MQ,M(X)") == 0) {
         strcpy(opcode, "00001001");
     }
+    else if (strcmp(str_lida, "STOR-M(X)") == 0) {
+        strcpy(opcode, "00100001");
+    }
+    else if (strcmp(str_lida, "LOAD-M(X)") == 0) {
+        strcpy(opcode, "00000001");
+    }
+    else if (strcmp(str_lida, "LOAD--M(X)") == 0) {
+        strcpy(opcode, "00000010");
+    }
+    else if (strcmp(str_lida, "LOAD-|M(X)|") == 0) {
+        strcpy(opcode, "00000011");
+    }
+    else if (strcmp(str_lida, "LOAD--|M(X)|") == 0) {
+        strcpy(opcode, "00000100");
+    }
+    else if (strcmp(str_lida, "JUMP-M(X,0:19)") == 0) {
+        strcpy(opcode, "00001101");
+    }
+    else if (strcmp(str_lida, "JUMP-M(X,20:39)") == 0) {
+        strcpy(opcode, "00001110");
+    }
+    else if (strcmp(str_lida, "JUMP-+M(X,0:19)") == 0) {
+        strcpy(opcode, "00001111");
+    }
+    else if (strcmp(str_lida, "JUMP-+M(X,20:39)") == 0) {
+        strcpy(opcode, "00010000");
+    }
+    else if (strcmp(str_lida, "ADD-M(X)") == 0) {
+        strcpy(opcode, "00000101");
+    }
+    else if (strcmp(str_lida, "ADD-|M(X)|") == 0) {
+        strcpy(opcode, "00000111");
+    }
+    else if (strcmp(str_lida, "SUB-M(X)") == 0) {
+        strcpy(opcode, "00000110");
+    }
+    else if (strcmp(str_lida, "SUB-|M(X)|") == 0) {
+        strcpy(opcode, "00001000");
+    }
+    else if (strcmp(str_lida, "MUL-M(X)") == 0) {
+        strcpy(opcode, "00001011");
+    }
+    else if (strcmp(str_lida, "DIV-M(X)") == 0) {
+        strcpy(opcode, "00001100");
+    }
+    else if (strcmp(str_lida, "LSH") == 0) {
+        strcpy(opcode, "00010100");
+    }
+    else if (strcmp(str_lida, "RSH") == 0) {
+        strcpy(opcode, "00010101");
+    }
+    else if (strcmp(str_lida, "STOR-M(X,8:19)") == 0) {
+        strcpy(opcode, "00010010");
+    }
+    
+    else if (strcmp(str_lida, "STOR-M(X,28:39)") == 0) {
+        strcpy(opcode, "00010011");
+    }
 }
 
 int main()
