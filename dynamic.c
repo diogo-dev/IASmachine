@@ -9,7 +9,7 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 #include <stdlib.h>
 #include <string.h>
 
-#define BUFFER_SIZE 40
+#define BUFFER_SIZE 41
 // para simular a memoria do IAS devemos alocar um bloco de memoria, como se fosse um vetor
 // char *memory = (char *) malloc(4096 * 5 * sizeof(char));
 
