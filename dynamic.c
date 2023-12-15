@@ -13,16 +13,30 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 // para simular a memoria do IAS devemos alocar um bloco de memoria, como se fosse um vetor
 // char *memory = (char *) malloc(4096 * 5 * sizeof(char));
 
-char finding_addres(char *str_lida, char* no_addres){
-    for(int i=0; i=strlen(str_lida); i++){
-        if(str_lida[i] == '('){
-            return str_lida[i+1];
-        }
-    } 
-    *no_addres = "000000000000";
-    return 0;
-}
+void finding_address(char *str_lida, char *address, char *no_address)
+{
+    int i = 0;
+    int j = 0;
+    int k = 0;
 
+    while (i < strlen(str_lida) && str_lida[i] != ')' && str_lida[i] != ',')
+    {
+        if (str_lida[i] == '(')
+        {
+            k = i;
+            while (str_lida[k + 1] != ')' && str_lida[k + 1] != ',')
+            {
+                address[j] = str_lida[k + 1];
+                k++;
+                j++;
+            }
+            i = k;
+        }
+        i++;
+    }
+    if (strcmp(address, "-") == 0)
+        strcpy(no_address, "000000000000");
+}
 
 long int decoder(long int number)
 {
@@ -82,7 +96,8 @@ void display_memory_instructions(char **memory)
     }
 }
 
-void finding_instruction(char *str_lida, char *opcode)
+//precisa der alterada
+void finding_opcode(char *str_lida, char *opcode)
 {
     if (strcmp(str_lida, "LOAD-MQ") == 0) {
         strcpy(opcode, "00001010");
@@ -144,7 +159,6 @@ void finding_instruction(char *str_lida, char *opcode)
     else if (strcmp(str_lida, "STOR-M(X,8:19)") == 0) {
         strcpy(opcode, "00010010");
     }
-
     else if (strcmp(str_lida, "STOR-M(X,28:39)") == 0) {
         strcpy(opcode, "00010011");
     }
@@ -158,7 +172,9 @@ int main()
     char **memory = (char **)malloc(4096 * sizeof(char *));
     char linha_lida[BUFFER_SIZE];
     FILE *arq;
-    char *opcode[9];
+    char opcode[9]; 
+    char address[12] = "-"; 
+    char no_address[12] = "nulo";
 
     if ((arq = fopen("texto.txt", "r")) == NULL)
     {
@@ -169,22 +185,20 @@ int main()
     int i = 0;
     while (fgets(linha_lida, BUFFER_SIZE, arq) != NULL)
     {
-        linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
-        memory[i] = (char *)malloc(5 * sizeof(char));
-        strcpy(memory[i], linha_lida);
-        i++; // equivalente a memory += 5;
+        if (i < 500)
+        {
+            linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
+            memory[i] = (char *)malloc(5 * sizeof(char));
+            strcpy(memory[i], linha_lida);
+            i++;
+        }
+        else
+        {
+            linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
+            finding_address(linha_lida, address, no_address);
+            printf("%s\n", address);
+        }
     }
-
-    display_memory_data(memory);
-    display_memory_instructions(memory);
-    printf("%s\n", opcode);
-    finding_instruction(memory[500], opcode);
-    printf("%s\n", opcode);
-    finding_instruction(memory[501], opcode);
-    printf("%s\n", opcode);
-
-    //char *trash;
-    //printf("%d", (strtol(opcode, &trash, 2)));
 
     free(memory);
     fclose(arq);
