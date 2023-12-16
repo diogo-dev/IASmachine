@@ -62,57 +62,98 @@ void display_memory_instructions(char **memory)
     }
 }
 
-void finding_instruction(char *str_lida, char *opcode)
-{
+void finding_opcode(char *str_lida, char *opcode) {
+
+    const char delimitador_inicial[2] = "(";
+    const char delimitador_final[2] = ")";
+    const char delimitador_jump[2] = ",";
+    char str_lida_backup[BUFFER_SIZE];
+    char str_lida_stor[BUFFER_SIZE];
+
+    char *token;
+    char *token_stor;
+
+    strcpy(str_lida_backup, str_lida);
+    strcpy(str_lida_stor, str_lida);
+    token = strtok(str_lida,delimitador_inicial);
+
     if (strcmp(str_lida, "LOAD-MQ") == 0) {
         strcpy(opcode, "00001010");
     }
-    else if (strcmp(str_lida, "LOAD-MQ,M(X)") == 0) {
+    else if (strcmp(str_lida, "LOAD-MQ,M") == 0) {
         strcpy(opcode, "00001001");
     }
-    else if (strcmp(str_lida, "STOR-M(X)") == 0) {
-        strcpy(opcode, "00100001");
+    else if (strcmp(str_lida, "STOR-M") == 0) {
+        token = strtok(str_lida_backup,delimitador_jump);
+        printf("%s\n",token);
+        if(strcmp(token,"STOR-M(X)") == 0){
+            strcpy(opcode,"00100001");
+        }
+        else {
+            token_stor = strtok(str_lida_stor, delimitador_jump);
+            printf("%s\n",token_stor);
+            token_stor = strtok(NULL, delimitador_final);
+            printf("%s\n",token_stor);
+            if(strcmp(token_stor,"8:19") == 0) {
+                strcpy(opcode, "00010010");
+            }
+            else if(strcmp(token_stor,"28:39") == 0){
+                strcpy(opcode, "00010011");
+            }
+        }
     }
-    else if (strcmp(str_lida, "LOAD-M(X)") == 0) {
+    else if (strcmp(str_lida, "LOAD-M") == 0) {
         strcpy(opcode, "00000001");
     }
-    else if (strcmp(str_lida, "LOAD--M(X)") == 0) {
+    else if (strcmp(str_lida, "LOAD--M") == 0) {
         strcpy(opcode, "00000010");
     }
-    else if (strcmp(str_lida, "LOAD-|M(X)|") == 0) {
+    else if (strcmp(str_lida, "LOAD-|M") == 0) {
         strcpy(opcode, "00000011");
-    }    
-    else if (strcmp(str_lida, "LOAD--|M(X)|") == 0) {
+    }
+    else if (strcmp(str_lida, "LOAD--|M") == 0) {
         strcpy(opcode, "00000100");
     }
-    else if (strcmp(str_lida, "JUMP-M(X,0:19)") == 0) {
-        strcpy(opcode, "00001101");
+    else if (strcmp(str_lida, "JUMP-M") == 0) {
+        token = strtok(str_lida_backup, delimitador_jump);
+        printf("%s\n",token);
+        token = strtok(NULL, delimitador_final);
+        printf("%s\n",token);
+        if(strcmp(token,"0:19") == 0) {
+            strcpy(opcode, "00001101");
+        }
+        else if(strcmp(token,"20:39") == 0){
+            strcpy(opcode, "00001110");
+        }
     }
-    else if (strcmp(str_lida, "JUMP-M(X,20:39)") == 0) {
-        strcpy(opcode, "00001110");
+    else if (strcmp(str_lida, "JUMP-+M") == 0) {
+        token = strtok(str_lida_backup, delimitador_jump);
+        printf("%s\n",token);
+        token = strtok(NULL, delimitador_final);
+        printf("%s\n",token);
+        if(strcmp(token,"0:19") == 0) {
+            strcpy(opcode, "00001111");
+        }
+        else if(strcmp(token,"20:39") == 0){
+            strcpy(opcode, "00010000");
+        }
     }
-    else if (strcmp(str_lida, "JUMP-+M(X,0:19)") == 0) {
-        strcpy(opcode, "00001111");
-    }
-    else if (strcmp(str_lida, "JUMP-+M(X,20:39)") == 0) {
-        strcpy(opcode, "00010000");
-    }
-    else if (strcmp(str_lida, "ADD-M(X)") == 0) {
+    else if (strcmp(str_lida, "ADD-M") == 0) {
         strcpy(opcode, "00000101");
     }
-    else if (strcmp(str_lida, "ADD-|M(X)|") == 0) {
+    else if (strcmp(str_lida, "ADD-|M") == 0) {
         strcpy(opcode, "00000111");
     }
-    else if (strcmp(str_lida, "SUB-M(X)") == 0) {
+    else if (strcmp(str_lida, "SUB-M") == 0) {
         strcpy(opcode, "00000110");
     }
-    else if (strcmp(str_lida, "SUB-|M(X)|") == 0) {
+    else if (strcmp(str_lida, "SUB-|M") == 0) {
         strcpy(opcode, "00001000");
     }
-    else if (strcmp(str_lida, "MUL-M(X)") == 0) {
+    else if (strcmp(str_lida, "MUL-M") == 0) {
         strcpy(opcode, "00001011");
     }
-    else if (strcmp(str_lida, "DIV-M(X)") == 0) {
+    else if (strcmp(str_lida, "DIV-M") == 0) {
         strcpy(opcode, "00001100");
     }
     else if (strcmp(str_lida, "LSH") == 0) {
@@ -121,12 +162,17 @@ void finding_instruction(char *str_lida, char *opcode)
     else if (strcmp(str_lida, "RSH") == 0) {
         strcpy(opcode, "00010101");
     }
-    else if (strcmp(str_lida, "STOR-M(X,8:19)") == 0) {
-        strcpy(opcode, "00010010");
-    }
-
-    else if (strcmp(str_lida, "STOR-M(X,28:39)") == 0) {
-        strcpy(opcode, "00010011");
+    else if (strcmp(str_lida, "STOR-M") == 0) {
+        token = strtok(str_lida_backup, delimitador_jump);
+        printf("%s\n",token);
+        token = strtok(NULL, delimitador_final);
+        printf("%s\n",token);
+        if(strcmp(token,"0:19") == 0) {
+            strcpy(opcode, "00010010");
+        }
+        else if(strcmp(token,"20:39") == 0){
+            strcpy(opcode, "00010011");
+        }
     }
     else if (strcmp(str_lida, "EXIT") == 0) {
         strcpy(opcode, "11111111");
