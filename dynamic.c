@@ -9,17 +9,15 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 #include <stdlib.h>
 #include <string.h>
 
-#define BUFFER_SIZE 41
-// para simular a memoria do IAS devemos alocar um bloco de memoria, como se fosse um vetor
-// char *memory = (char *) malloc(4096 * 5 * sizeof(char));
+#define BUFFER_SIZE 40
 
-void finding_address(char *str_lida, char *address, char *no_address)
+void finding_address(char *str_lida, char *address)
 {
     int i = 0;
     int j = 0;
     int k = 0;
 
-    while (i < strlen(str_lida) && str_lida[i] != ')' && str_lida[i] != ',')
+    while (i < strlen(str_lida) && str_lida[i] != ')')
     {
         if (str_lida[i] == '(')
         {
@@ -35,46 +33,7 @@ void finding_address(char *str_lida, char *address, char *no_address)
         i++;
     }
     if (strcmp(address, "-") == 0)
-        strcpy(no_address, "000000000000");
-}
-
-long int decoder(long int number)
-{
-    int number_size = 0;
-    long int temp_number = number, to_return = 0, power_2 = 1;
-
-    // ------------ Transformando um inteiro em um vetor de inteiro --------------
-
-    while (temp_number != 0)
-    {
-
-        temp_number /= 10;
-        number_size++;
-    }
-
-    long int numberArray[number_size];
-    int temp = (number_size - 1);
-    temp_number = number;
-
-    while (temp_number != 0)
-    {
-
-        numberArray[temp] = temp_number % 10;
-        temp_number /= 10;
-        temp--;
-    }
-
-    // ------------ Transformando um inteiro em um vetor de inteiro --------------
-
-    // Realizar transformacao do vetor binario em um inteiro decimal
-
-    for (int i = number_size; i >= 0; i--)
-    {
-        to_return += numberArray[i] * power_2;
-        power_2 *= 2;
-    }
-
-    return to_return;
+        strcpy(address, "000000000000");
 }
 
 void display_memory_data(char **memory)
@@ -90,7 +49,7 @@ void display_memory_data(char **memory)
 void display_memory_instructions(char **memory)
 {
     printf("---------Display memory instructions---------\n");
-    for (int i = 500; i < 502; i++)
+    for (int i = 500; i < 512; i++)
     {
         printf("%s\n", memory[i]);
     }
@@ -103,6 +62,7 @@ void finding_opcode(char *str_lida, char *opcode)
     const char delimitador_final[2] = ")";
     const char delimitador_jump[2] = ",";
     char str_lida_backup[BUFFER_SIZE];
+    char str_lida_backup2[BUFFER_SIZE];
     char str_lida_stor[BUFFER_SIZE];
 
     char *token;
@@ -110,6 +70,7 @@ void finding_opcode(char *str_lida, char *opcode)
 
     strcpy(str_lida_backup, str_lida);
     strcpy(str_lida_stor, str_lida);
+    strcpy(str_lida_backup2, str_lida);
     token = strtok(str_lida, delimitador_inicial);
 
     if (strcmp(str_lida, "LOAD-MQ") == 0)
@@ -123,17 +84,14 @@ void finding_opcode(char *str_lida, char *opcode)
     else if (strcmp(str_lida, "STOR-M") == 0)
     {
         token = strtok(str_lida_backup, delimitador_jump);
-        printf("%s\n", token);
-        if (strcmp(token, "STOR-M(X)") == 0)
+        if (strcmp(token, str_lida_backup2) == 0)
         {
             strcpy(opcode, "00100001");
         }
         else
         {
             token_stor = strtok(str_lida_stor, delimitador_jump);
-            printf("%s\n", token_stor);
             token_stor = strtok(NULL, delimitador_final);
-            printf("%s\n", token_stor);
             if (strcmp(token_stor, "8:19") == 0)
             {
                 strcpy(opcode, "00010010");
@@ -245,12 +203,17 @@ void finding_opcode(char *str_lida, char *opcode)
 
 int main()
 {
-    char **memory = (char **)malloc(4096 * sizeof(char *));
-    char linha_lida[BUFFER_SIZE];
     FILE *arq;
-    char opcode[9]; 
-    char address[12] = "-"; 
-    char no_address[12] = "nulo";
+    char **memory = (char **)malloc(4096 * sizeof(char *));
+
+    char linha_lida[BUFFER_SIZE];
+    char linha_lida2[BUFFER_SIZE];
+    char linha_lida_backup[BUFFER_SIZE];
+    char linha_lida2_backup[BUFFER_SIZE];
+
+    char *trash;
+    long long int word;
+    char word_string[BUFFER_SIZE];
 
     if ((arq = fopen("texto.txt", "r")) == NULL)
     {
@@ -259,22 +222,98 @@ int main()
     }
 
     int i = 0;
+
     while (fgets(linha_lida, BUFFER_SIZE, arq) != NULL)
     {
-        if (i < 500)
+        if (i < 500) // Para os dados
         {
             linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
             memory[i] = (char *)malloc(5 * sizeof(char));
             strcpy(memory[i], linha_lida);
             i++;
         }
+        else if ((fgets(linha_lida2, BUFFER_SIZE, arq) != NULL))
+        {
+            // Isso vai acontecer caso a segunda instrucao lida exista.
+            printf("-----------------------------------------------------------\n");
+
+            char address1[BUFFER_SIZE] = "-";
+            char address2[BUFFER_SIZE] = "-";
+
+            char opcode1[BUFFER_SIZE];
+            char opcode2[BUFFER_SIZE];
+
+            linha_lida[strlen(linha_lida) - 1] = '\0';   // retirando o '\n' da string lida
+            linha_lida2[strlen(linha_lida2) - 1] = '\0'; // retirando o '\n' da string lida
+
+            strcpy(linha_lida_backup, linha_lida);
+            strcpy(linha_lida2_backup, linha_lida2);
+
+            printf("linha lida1: %s\n", linha_lida_backup);
+            printf("linha lida2: %s\n", linha_lida2);
+            finding_opcode(linha_lida_backup, opcode1);
+            printf("opcode1: %s\n", opcode1);
+            finding_address(linha_lida, address1);
+            printf("address1:%s\n", address1);
+            strcat(opcode1, address1);
+            printf("instrucao1: %s\n", opcode1);
+
+            finding_opcode(linha_lida2_backup, opcode2);
+            printf("opcode2: %s\n", opcode2);
+            finding_address(linha_lida2, address2);
+            printf("address2: %s\n", address2);
+            strcat(opcode2, address2);
+            printf("instrucao2: %s\n", opcode2);
+
+            strcat(opcode1, opcode2);
+            printf("palavra: %s\n", opcode1);
+            word = strtol(opcode1, &trash, 2);
+            sprintf(word_string, "%lli", word);
+            memory[i] = (char *)malloc(5 * sizeof(char));
+            strcpy(memory[i], word_string);
+            i++;
+        }
         else
         {
+            // Caso nao tenha a instrucao da direita para ser colocada na memoria, iremos apenas pegar a da esquerda.
+
+            /*Duvida: nao sei se na hora de colocar na memoria a instrucao da direita precisara ser 20 0's, entao
+            nao coloquei por enquanto*/
+
+            printf("--------------------------------------------------------------\n");
+
+            char address1[BUFFER_SIZE] = "-";
+            char opcode1[BUFFER_SIZE];
+
+            char empty_instruction[BUFFER_SIZE];
+            strcpy(empty_instruction, "00000000000000000000");
+
             linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
-            finding_address(linha_lida, address, no_address);
-            printf("%s\n", address);
+
+            strcpy(linha_lida_backup, linha_lida);
+
+            finding_opcode(linha_lida_backup, opcode1);
+            printf("opcode1: %s\n", opcode1);
+            finding_address(linha_lida, address1);
+            printf("address1:%s\n", address1);
+            strcat(opcode1, address1);
+            printf("instrucao1: %s\n", opcode1);
+
+            strcat(opcode1, empty_instruction);
+            printf("palavra: %s\n", opcode1);
+            word = strtol(opcode1, &trash, 2);
+            sprintf(word_string, "%lli", word);
+            memory[i] = (char *)malloc(5 * sizeof(char));
+            strcpy(memory[i], word_string);
+            i++;
         }
     }
+
+    // display_memory_data(memory);
+    display_memory_instructions(memory);
+
+    // char *trash;
+    // printf("%d", (strtol(opcode, &trash, 2)));
 
     free(memory);
     fclose(arq);
