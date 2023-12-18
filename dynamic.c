@@ -3,17 +3,22 @@ Desenvolver um simulador do computador IAS
 
 Alunos: Diogo Felipe Soares da Silva    RA:124771
         Arthur Henrique Bando Ueda      RA:129406
-        Gustavo Alves Glatz             RA:128592
-*/
+        Gustavo Alves Glatz             RA:128592 */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #define BUFFER_SIZE 40
 // para simular a memoria do IAS devemos alocar um bloco de memoria, como se fosse um vetor
-// char *memory = (char *) malloc(4096 * 5 * sizeof(char));
     
+double potencia(int base, int expoente){
+    if(expoente == 0)
+        return 1;
+    else
+        return (base * potencia(base, expoente-1));
+}
+
 long long int binary_decimal(char *palavra)
 {
     long long int dec = 0;
@@ -22,7 +27,7 @@ long long int binary_decimal(char *palavra)
     s = strlen(palavra);
     while( s-- ) {
         if( palavra[s] == '0' || palavra[s] == '1' ) {
-            dec = dec + pow(2, i++) * (palavra[s] - '0');
+            dec = dec + potencia(2, i++) * (palavra[s] - '0');
         }
     };
     return dec;
@@ -196,10 +201,7 @@ int main()
     }
 
     int i = 0;
-    
     while (fgets(linha_lida, BUFFER_SIZE, arq) != NULL)
-    /*OBS: nao consegui testar por que o finding instructions precisara ser alterado e provavelmente o codigo 
-    passara por alteracoes, mas tentei criar a base.*/
         {
             if (i < 500) // Para os dados
             {
@@ -256,9 +258,6 @@ int main()
             {
                 //Caso nao tenha a instrucao da direita para ser colocada na memoria, iremos apenas pegar a da esquerda.
                 
-                /*Duvida: nao sei se na hora de colocar na memoria a instrucao da direita precisara ser 20 0's, entao 
-                nao coloquei por enquanto*/
-
                 printf("--------------------------------------------------------------\n");
 
                 char address1[BUFFER_SIZE] = "-";
