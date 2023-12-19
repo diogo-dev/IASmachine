@@ -71,7 +71,7 @@ void display_memory_data(char **memory)
 void display_memory_instructions(char **memory)
 {
     printf("---------Display memory instructions---------\n");
-    for (int i = 500; i < 512; i++)
+    for (int i = 500; i < 3596; i++)
     {
         printf("%s\n", memory[i]);
     }
@@ -130,9 +130,7 @@ void finding_opcode(char *str_lida, char *opcode) {
     }
     else if (strcmp(str_lida, "JUMP-M") == 0) {
         token = strtok(str_lida_backup, delimitador_jump);
-        printf("%s\n",token);
         token = strtok(NULL, delimitador_final);
-        printf("%s\n",token);
         if(strcmp(token,"0:19") == 0) {
             strcpy(opcode, "00001101");
         }
@@ -142,9 +140,7 @@ void finding_opcode(char *str_lida, char *opcode) {
     }
     else if (strcmp(str_lida, "JUMP-+M") == 0) {
         token = strtok(str_lida_backup, delimitador_jump);
-        printf("%s\n",token);
         token = strtok(NULL, delimitador_final);
-        printf("%s\n",token);
         if(strcmp(token,"0:19") == 0) {
             strcpy(opcode, "00001111");
         }
@@ -227,28 +223,20 @@ int main()
                 strcpy(linha_lida_backup,linha_lida);
                 strcpy(linha_lida2_backup,linha_lida2);
 
-                printf("linha lida1: %s\n",linha_lida_backup);
-                printf("linha lida2: %s\n",linha_lida2);
+                //instrução da esquerda
                 finding_opcode(linha_lida_backup,opcode1);
-                printf("opcode1: %s\n",opcode1);
                 finding_address(linha_lida, address1);
-                printf("address1:%s\n",address1);
                 strcat(opcode1,address1);
-                printf("instrucao1: %s\n",opcode1);
-
-
-                finding_opcode(linha_lida2_backup,opcode2);
-                printf("opcode2: %s\n",opcode2);
-                finding_address(linha_lida2, address2);
-                printf("address2: %s\n",address2);
-                strcat(opcode2,address2);
-                printf("instrucao2: %s\n", opcode2);
-
-                strcat(opcode1,opcode2);
-                printf("palavra: %s\n", opcode1);
                 
-                printf("Decimal: %lld\n", binary_decimal(opcode1));
+                //instrução da direita
+                finding_opcode(linha_lida2_backup,opcode2);
+                finding_address(linha_lida2, address2);
+                strcat(opcode2,address2);
 
+                //palavra final
+                strcat(opcode1,opcode2);
+
+                //Carregamento da palavra final para a memoria
                 sprintf(word_string,"%lli", binary_decimal(opcode1));
                 memory[i] = (char *)malloc(5 * sizeof(char));
                 strcpy(memory[i],word_string);
@@ -257,7 +245,6 @@ int main()
             else 
             {
                 //Caso nao tenha a instrucao da direita para ser colocada na memoria, iremos apenas pegar a da esquerda.
-                
                 printf("--------------------------------------------------------------\n");
 
                 char address1[BUFFER_SIZE] = "-";
@@ -270,18 +257,13 @@ int main()
 
                 strcpy(linha_lida_backup,linha_lida);
 
+                //instrução da esquerda (única)
                 finding_opcode(linha_lida_backup,opcode1);
-                printf("opcode1: %s\n",opcode1);
                 finding_address(linha_lida, address1);
-                printf("address1:%s\n",address1);
                 strcat(opcode1,address1);
-                printf("instrucao1: %s\n",opcode1);
 
+                //Carregamento da palavra final (instrução esquerda + "00000000000000000000") para a memoria
                 strcat(opcode1,empty_instruction);
-                printf("palavra: %s\n", opcode1);
-
-                printf("Decimal: %lld\n", binary_decimal(opcode1));
-
                 sprintf(word_string,"%lli", binary_decimal(opcode1));
                 memory[i] = (char *)malloc(5 * sizeof(char));
                 strcpy(memory[i],word_string);
