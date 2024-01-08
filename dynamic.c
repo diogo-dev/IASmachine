@@ -58,6 +58,16 @@ void finding_address(char *str_lida, char *address)
         strcpy(address, "000000000000");
 }
 
+void output_memory(char **memory, FILE *arquivo)
+{
+    //NAO ESTA FUNCIONANDO, PRECISA SER ALTERADO 
+    for(int i = 0; i < 100; i++)
+    {
+        fwrite(memory[i], strlen(memory[i]), 1, arquivo);
+        fwrite("\n", sizeof(char), 1, arquivo);
+    }
+}
+
 void display_memory_data(char **memory)
 {
     printf("---------Display memory data---------\n");
@@ -75,6 +85,7 @@ void display_memory_instructions(char **memory)
     {
         printf("%s\n", memory[i]);
     }
+    
 }
 
 void finding_opcode(char *str_lida, char *opcode) {
@@ -138,7 +149,7 @@ void finding_opcode(char *str_lida, char *opcode) {
             strcpy(opcode, "00001110");
         }
     }
-    else if (strcmp(str_lida, "JUMP-+M") == 0) {
+    else if (strcmp(str_lida, "JUMP+-M") == 0) {
         token = strtok(str_lida_backup, delimitador_jump);
         token = strtok(NULL, delimitador_final);
         if(strcmp(token,"0:19") == 0) {
@@ -182,6 +193,8 @@ int main()
     FILE *arq;
     char **memory = (char **)malloc(4096 * sizeof(char *));
 
+    FILE *arquivo_memoria = fopen("memoria.txt","w");
+
     char linha_lida[BUFFER_SIZE];
     char linha_lida2[BUFFER_SIZE];
     char linha_lida_backup[BUFFER_SIZE];
@@ -199,7 +212,8 @@ int main()
     int i = 0;
     while (fgets(linha_lida, BUFFER_SIZE, arq) != NULL)
         {
-            if (i < 500) // Para os dados
+            char value = linha_lida[0];
+            if (value >= 48 && value <= 57) // Para os dados
             {
                 linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
                 memory[i] = (char *)malloc(5 * sizeof(char));
@@ -209,7 +223,6 @@ int main()
             else if((fgets(linha_lida2, BUFFER_SIZE, arq) != NULL))
             {
                 //Isso vai acontecer caso a segunda instrucao lida exista.
-                printf("-----------------------------------------------------------\n");
 
                 char address1[BUFFER_SIZE] = "-";
                 char address2[BUFFER_SIZE] = "-";
@@ -268,13 +281,14 @@ int main()
                 memory[i] = (char *)malloc(5 * sizeof(char));
                 strcpy(memory[i],word_string);
                 i++;
-
             }
         }
+    output_memory(memory,arquivo_memoria);
     display_memory_data(memory);
     display_memory_instructions(memory);
 
     free(memory);
+    fclose(arquivo_memoria);
     fclose(arq);
 
     return 0;
