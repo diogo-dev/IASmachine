@@ -65,24 +65,12 @@ int finding_address(char *str_lida, char *address)
     }
 }
 
-void display_memory_data(char **memory)
+void output_file_memory(FILE *arquivo, char **memory)
 {
-    printf("---------Display memory data---------\n");
-    for (int i = 0; i < 500; i++)
+    for (int i = 0; i < 4096; i++)
     {
-        printf("%s\n", memory[i]);
+        fputs(memory[i],arquivo);
     }
-    printf("---------End Display Data---------\n");
-}
-
-void display_memory_instructions(char **memory)
-{
-    printf("---------Display memory instructions---------\n");
-    for (int i = 500; i < 3596; i++)
-    {
-        printf("%s\n", memory[i]);
-    }
-    
 }
 
 void finding_opcode(char *str_lida, unsigned char *opcode) {
@@ -209,6 +197,10 @@ void finding_opcode(char *str_lida, unsigned char *opcode) {
     {
         *opcode = 0b11111111;
     }
+    else
+    { 
+        *opcode = 0b00000000;
+    }
 }
 
 int main(int argc, char *argv[])
@@ -216,8 +208,9 @@ int main(int argc, char *argv[])
     char **memory = (char **)malloc(4096 * sizeof(char *));
 
     FILE *arq;
-    FILE *arquivo_memoria;
+    FILE *arquivo_saida;
 
+    char buffer[BUFFER_SIZE];
     char linha_lida[BUFFER_SIZE];
     char linha_lida2[BUFFER_SIZE];
     char linha_lida_backup[BUFFER_SIZE];
@@ -239,7 +232,7 @@ int main(int argc, char *argv[])
         while (fgets(linha_lida, BUFFER_SIZE, arq) != NULL)
             {
                 char value = linha_lida[0];
-                if (value >= 48 && value <= 57) // Para os dados
+                if (value >= 48 && value <= 57 || value == 45) // Para os dados
                 {
                     linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
                     memory[i] = (char *)malloc(5 * sizeof(char));
@@ -266,70 +259,41 @@ int main(int argc, char *argv[])
                     strcpy(linha_lida2_backup,linha_lida2);
 
                     //instrução da esquerda
-                    finding_opcode(linha_lida_backup,opcode1);
+                    finding_opcode(linha_lida_backup, &opcode1);
                     address1 = finding_address(linha_lida, str1);
                     
                     //instrução da direita
-                    finding_opcode(linha_lida2_backup,opcode2);
+                    finding_opcode(linha_lida2_backup, &opcode2);
                     address2 = finding_address(linha_lida2, str2);
-                    strcat(opcode2,address2);
 
                     //palavra final
+                    printf("%d",i);
                     palavra = opcode1 << 12;
-                    printf("palavra: %ld\n", palavra);
+                    //printf("palavra: %ld\n", palavra);
                     palavra = palavra | address1;
-                    printf("palavra: %ld\n", palavra);
+                    //printf("palavra: %ld\n", palavra);
                     palavra = palavra << 8;
-                    printf("palavra: %ld\n", palavra);
+                    //printf("palavra: %ld\n", palavra);
                     palavra = palavra | opcode2;
-                    printf("palavra: %ld\n", palavra);
+                    //printf("palavra: %ld\n", palavra);
                     palavra = palavra << 12;
-                    printf("palavra: %ld\n", palavra);
+                    //printf("palavra: %ld\n", palavra);
                     palavra = palavra | address2;
-                    printf("palavra: %ld\n", palavra);
-
-
+                    //printf("palavra: %ld\n", palavra);
+                    
+                    //ltoa(palavra,buffer,10);
+                    sprintf(buffer,"%li",palavra);
                     //Carregamento da palavra final para a memoria
                     memory[i] = (char *)malloc(5 * sizeof(char));
-                    memory[i] = palavra;
-                    i++;
-                }
-                else 
-                {
-                    //Caso nao tenha a instrucao da direita para ser colocada na memoria, iremos apenas pegar a da esquerda.
-                    printf("--------------------------------------------------------------\n");
-
-                    char address1[BUFFER_SIZE] = "-";
-                    char opcode1[BUFFER_SIZE];
-
-                    char empty_instruction[BUFFER_SIZE];
-                    strcpy(empty_instruction, "00000000000000000000");
-                    
-                    linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
-
-                    strcpy(linha_lida_backup,linha_lida);
-
-                    //instrução da esquerda (única)
-                    finding_opcode(linha_lida_backup,opcode1);
-                    finding_address(linha_lida, address1);
-                    strcat(opcode1,address1);
-
-                    //Carregamento da palavra final (instrução esquerda + "00000000000000000000") para a memoria
-                    strcat(opcode1,empty_instruction);
-                    sprintf(word_string,"%lli", binary_decimal(opcode1));
-                    memory[i] = (char *)malloc(5 * sizeof(char));
-                    strcpy(memory[i],word_string);
+                    strcat(memory[i],buffer);
                     i++;
                 }
             }
-
         }
 
-    display_memory_data(memory);
-    display_memory_instructions(memory);
-
+    //output_file_memory(arquivo_saida,memory);
     free(memory);
-    fclose(arquivo_memoria);
+    fclose(arquivo_saida);
     fclose(arq);
 
     return 0;
