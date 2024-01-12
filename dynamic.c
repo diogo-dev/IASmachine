@@ -10,7 +10,6 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 #include <string.h>
 
 #define BUFFER_SIZE 40
-// para simular a memoria do IAS devemos alocar um bloco de memoria, como se fosse um vetor
     
 double potencia(int base, int expoente) {
     if(expoente == 0)
@@ -65,15 +64,8 @@ int finding_address(char *str_lida, char *address)
     }
 }
 
-void output_file_memory(FILE *arquivo, char **memory)
+void finding_opcode(char *str_lida, unsigned char *opcode) 
 {
-    for (int i = 0; i < 4096; i++)
-    {
-        fputs(memory[i],arquivo);
-    }
-}
-
-void finding_opcode(char *str_lida, unsigned char *opcode) {
 
     const char delimitador_inicial[2] = "(";
     const char delimitador_final[2] = ")";
@@ -205,7 +197,7 @@ void finding_opcode(char *str_lida, unsigned char *opcode) {
 
 int main(int argc, char *argv[])
 {
-    char **memory = (char **)malloc(4096 * sizeof(char *));
+     char **memory = (char **)malloc(4096 * sizeof(char *));
 
     FILE *arq;
     FILE *arquivo_saida;
@@ -216,12 +208,9 @@ int main(int argc, char *argv[])
     char linha_lida_backup[BUFFER_SIZE];
     char linha_lida2_backup[BUFFER_SIZE];
 
-    char *trash;
-    char word_string[BUFFER_SIZE];
     
     if (argc == 5 && (strcmp(argv[1], "-p") == 0) && (strcmp(argv[3], "-m") == 0))
     {
-        //executar os comandos
         if ((arq = fopen(argv[2], "r")) == NULL)
         {
             printf("Erro ao abrir o aquivo!");
@@ -242,7 +231,7 @@ int main(int argc, char *argv[])
                 else if((fgets(linha_lida2, BUFFER_SIZE, arq) != NULL))
                 {
                     //Isso vai acontecer caso a segunda instrucao lida exista.
-                    long int palavra;
+                    long int palavra = 0;
 
                     int address1;
                     int address2;
@@ -269,29 +258,34 @@ int main(int argc, char *argv[])
                     //palavra final
                     printf("%d",i);
                     palavra = opcode1 << 12;
-                    //printf("palavra: %ld\n", palavra);
                     palavra = palavra | address1;
-                    //printf("palavra: %ld\n", palavra);
                     palavra = palavra << 8;
-                    //printf("palavra: %ld\n", palavra);
                     palavra = palavra | opcode2;
-                    //printf("palavra: %ld\n", palavra);
                     palavra = palavra << 12;
-                    //printf("palavra: %ld\n", palavra);
                     palavra = palavra | address2;
-                    //printf("palavra: %ld\n", palavra);
                     
-                    //ltoa(palavra,buffer,10);
-                    sprintf(buffer,"%li",palavra);
                     //Carregamento da palavra final para a memoria
                     memory[i] = (char *)malloc(5 * sizeof(char));
-                    strcat(memory[i],buffer);
+                    memory[i] = palavra;
                     i++;
                 }
             }
         }
 
-    //output_file_memory(arquivo_saida,memory);
+    //ao rodar o programa esta dando erro de falha de segmentacao
+    //nao conseguimos arrumar o problema
+    //quando terminarmos, enviaremos um email para o senhor
+    if ((arquivo_saida = fopen(argv[4], "w")) == NULL)
+    {
+            printf("Erro ao abrir o aquivo!");
+            exit(1);
+    }
+
+    for (int i = 0; i < 4096; i++)
+    {
+        fputs(memory[i], arquivo_saida);
+    }
+
     free(memory);
     fclose(arquivo_saida);
     fclose(arq);

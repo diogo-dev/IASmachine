@@ -1,2 +1,4 @@
 LOAD-MQ
 DIV-M(10)
+ADD-M(1)
+SUB-M(2)

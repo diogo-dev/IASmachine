@@ -1,1067 +1,335 @@
-/*
-    Made By: Ankit Agrawal
-    Roll No.: IMT2019010
-*/
+/*      Trabalho de Arquitetura 1
+Desenvolver um simulador do computador IAS
 
-/*
-    Things to notice: PC is 12 bits, although 10 bits are sufficient. Probably because MAR is 12 bits
-*/
+Alunos: Diogo Felipe Soares da Silva    RA:124771
+        Arthur Henrique Bando Ueda      RA:129406
+        Gustavo Alves Glatz             RA:128592 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-
-// Main Memory M
-long long int Memory[1000][40]; // Create 1000 x 40 memory with all bits set to 0
-
-// Program Control Unit
-long long int MAR[12]; // Create 12 bit MAR with all bits set to 0
-long long int IR[8];   // Create 8 bit IR with all bits set to 0
-long long int IBR[20];  // Create 20 bit IBR with all bits set to 0
-long long int PC[12];   // Create 12 bits (addressing 1000 memory locations) with all bits set to 0
-
-// Arithmetic-logic unit (ALU)
-long long int AC[40];  // Create 40 bit AC with all bits set to 0
-long long int MQ[40];  // Create 40 bit MQ with all bits set to 0
-long long int MBR[40]; // Create 40 bit MBR with all bits set to 0
-
-// Flags to keep track of whether the left instruction has been executed or not
-long long int Flag = 1; // 1 for LHS, 2 for RHS (no Deviation) and 3 for RHS (Deviation)
-
-void display(long long int v[], int size)
-{
-    for (int j = 0; j < size; j++)
-    {
-        printf("%lld", v[j]);
-    }
-    printf("\n");
+#define BUFFER_SIZE 40
+#define UNSIGNED_CHAR_SIZE 255
+    
+double potencia(int base, int expoente) {
+    if(expoente == 0)
+        return 1;
+    else
+        return (base * potencia(base, expoente-1));
 }
 
-void display_2(long long int v[], int size)
+long long int binary_decimal(char *palavra)
 {
-    for (int j = 0; j < size; j++)
-    {
-        printf("%lld", v[j]);
-    }
+    long long int dec = 0;
+    int i = 0;
+    int s;
+    s = strlen(palavra);
+    while( s-- ) {
+        if( palavra[s] == '0' || palavra[s] == '1' ) {
+            dec = dec + potencia(2, i++) * (palavra[s] - '0');
+        }
+    };
+    return dec;
 }
 
-void display_IAS()
+int finding_address(char *str_lida, char *address)
 {
-    printf("MAR : ");
-    display(MAR, 12);
-    printf("IR : ");
-    display(IR, 8);
-    printf("IBR : ");
-    display(IBR, 20);
-    printf("PC : ");
-    display(PC, 12);
-    printf("AC : ");
-    display(AC, 40);
-    printf("MQ : ");
-    display(MQ, 40);
-    printf("MBR : ");
-    display(MBR, 40);
-    printf("Flag : %lld\n", Flag);
-}
+    int i = 0;
+    int j = 0;
+    int k = 0;
 
-void Program_Memory(long long int row, char *s)
-{
-    for (int j = 0; j < 40; j++)
+    while (i < strlen(str_lida) && str_lida[i] != ')' )
     {
-        Memory[row][j] = s[j] - '0';
+        if (str_lida[i] == '(')
+        {
+            k = i;
+            while (str_lida[k + 1] != ')' && str_lida[k + 1] != ',')
+            {
+                address[j] = str_lida[k + 1];
+                k++;
+                j++;
+            }
+            i = k;
+        }
+        i++;
     }
-}
-
-long long int Binary_to_Decimal(long long int Binary_Vector[], long long int Ending_Point)
-{
-    long long int to_return = 0;
-    long long int power_2 = 1;
-    for (int j = Ending_Point; j >= 0; j--)
-    {
-        to_return += Binary_Vector[j] * power_2;
-        power_2 *= 2;
-    }
-    return to_return;
-}
-
-void Decimal_to_Binary(long long int number, long long int to_return[], int *size)
-{
-    if (number == 0) // This is a special case
-    {
-        to_return[0] = 0;
-        *size = 1;
-        return;
-    }
-
-    if (number < 0)
-    {
-        number = number * -1;
-    }
-
-    *size = 0;
-    while (number / 2 != 0)
-    {
-        to_return[*size] = number % 2;
-        (*size)++;
-        number = number / 2;
-    }
-    to_return[*size] = 1;
-    (*size)++;
-    // Reverse the array
-    for (int i = 0; i < *size / 2; i++)
-    {
-        long long int temp = to_return[i];
-        to_return[i] = to_return[*size - i - 1];
-        to_return[*size - i - 1] = temp;
-    }
-}
-
-long long int OPcode_Match(char *s)
-{
-    if (strlen(s) != 8)
+    if (strcmp(address, "0") == 0)
     {
         return 0;
     }
     else
     {
-        long long int is_identical = 1;
-        for (int j = 0; j < 8; j++)
-        {
-            if (IR[j] != s[j] - '0')
-            {
-                is_identical = 0;
-                break;
-            }
-        }
-        return is_identical;
+        int i = atoi(address);
+        return i;
     }
 }
 
-void Reset_IAS()
+void finding_opcode(char *str_lida, unsigned char *opcode) 
 {
-    // Resetting PC to 0
-    for (int j = 0; j < 12; j++)
+
+    const char delimitador_inicial[2] = "(";
+    const char delimitador_final[2] = ")";
+    const char delimitador_jump[2] = ",";
+    char str_lida_backup[BUFFER_SIZE];
+    char str_lida_backup2[BUFFER_SIZE];
+    char str_lida_stor[BUFFER_SIZE];
+
+    char *token;
+    char *token_stor;
+
+    strcpy(str_lida_backup, str_lida);
+    strcpy(str_lida_stor, str_lida);
+    strcpy(str_lida_backup2,str_lida);
+    token = strtok(str_lida,delimitador_inicial);
+
+    if (strcmp(str_lida, "LOAD-MQ") == 0) 
     {
-        PC[j] = 0;
+        *opcode = 0b00001010;
     }
-
-    // Resetting MAR
-    for (int j = 0; j < 12; j++)
+    else if (strcmp(str_lida, "LOAD-MQ,M") == 0) 
     {
-        MAR[j] = 0;
+        *opcode = 0b00001001;
     }
-
-    // Resetting IR
-    for (int j = 0; j < 8; j++)
+    else if (strcmp(str_lida, "STOR-M") == 0) 
     {
-        IR[j] = 0;
-    }
-
-    // Resetting IBR
-    for (int j = 0; j < 20; j++)
-    {
-        IBR[j] = 0;
-    }
-
-    // Resetting AC
-    for (int j = 0; j < 40; j++)
-    {
-        AC[j] = 0;
-    }
-
-    // Resetting MQ
-    for (int j = 0; j < 40; j++)
-    {
-        MQ[j] = 0;
-    }
-
-    // Resetting MBR
-    for (int j = 0; j < 40; j++)
-    {
-        MBR[j] = 0;
-    }
-
-    // We start IAS from the LHS instruction of Memory Address 0 (in Decimal)
-    Flag = 1;
-}
-
-void Increment_PC()
-{
-    long long int PC_Value = Binary_to_Decimal(PC, 0);
-    PC_Value = PC_Value + 1;
-    long long int New_PC[12];
-    int size;
-    Decimal_to_Binary(PC_Value, New_PC, &size);
-    int New_PC_Pointer = size - 1;
-
-    for (int j = 11; j >= 0; j--)
-    {
-        if (New_PC_Pointer < 0)
+        token = strtok(str_lida_backup,delimitador_jump);
+        if(strcmp(token,str_lida_backup2) == 0)
         {
-            break;
+            *opcode = 0b00100001;
         }
-        else
+        else 
         {
-            PC[j] = New_PC[New_PC_Pointer];
-            New_PC_Pointer -= 1;
+            token_stor = strtok(str_lida_stor, delimitador_jump);
+            token_stor = strtok(NULL, delimitador_final);
+            if(strcmp(token_stor,"8:19") == 0) 
+            {
+                *opcode = 0b00010010;
+            }
+            else if(strcmp(token_stor,"28:39") == 0)
+            {
+                *opcode = 0b00010011;
+            }
         }
     }
-
-    for (int j = 0; j < 12 - size; j++)
+    else if (strcmp(str_lida, "LOAD-M") == 0) 
     {
-        PC[j] = 0;
+        *opcode = 0b00000001;
     }
-}
-
-long long int* ALU(long long int Type_Of_Operation)
-{
-    static long long int Temporary_Register[40]; // Static array to store the result
-
-    if (Type_Of_Operation == 1) // LOAD -M(X)
+    else if (strcmp(str_lida, "LOAD--M") == 0) 
     {
-        for (int i = 0; i < 40; i++)
-        {
-            Temporary_Register[i] = MBR[i];
-        }
-
-        if (Temporary_Register[0] == 0)
-        {
-            Temporary_Register[0] = 1;
-        }
-        else
-        {
-            Temporary_Register[0] = 0;
-        }
-
-        return Temporary_Register;
+        *opcode = 0b00000010;
     }
-
-    else if (Type_Of_Operation == 2) // LOAD |M(X)|
+    else if (strcmp(str_lida, "LOAD-|M") == 0) 
     {
-        for (int i = 0; i < 40; i++)
-        {
-            Temporary_Register[i] = MBR[i];
-        }
-
-        if (Temporary_Register[0] == 1)
-        {
-            Temporary_Register[0] = 0;
-        }
-
-        return Temporary_Register;
+        *opcode = 0b00000011;
     }
-
-    else if (Type_Of_Operation == 3) // LOAD -|M(X)|
+    else if (strcmp(str_lida, "LOAD--|M") == 0) 
     {
-        for (int i = 0; i < 40; i++)
-        {
-            Temporary_Register[i] = MBR[i];
-        }
-
-        if (Temporary_Register[0] == 1) // First we calculate |M(X)|
-        {
-            Temporary_Register[0] = 0;
-        }
-
-        if (Temporary_Register[0] == 0) // Then we change its sign if it's positive
-        {
-            Temporary_Register[0] = 1;
-        }
-
-        return Temporary_Register;
+        *opcode = 0b00000100;
     }
-
-    else if (Type_Of_Operation == 4) // ADD M(X)
+    else if (strcmp(str_lida, "JUMP-M") == 0) 
     {
-        // Notice that the number to be added is in the MBR already!
-        // So we have to perform: MBR + AC;
-        // We don't care about overflow - no flags as of now, we just truncate extra bits
-
-        long long int Number_AC = Binary_to_Decimal(AC, 1);
-        long long int Number_MBR = Binary_to_Decimal(MBR, 1);
-
-        if (AC[0] == 1)
+        token = strtok(str_lida_backup, delimitador_jump);
+        token = strtok(NULL, delimitador_final);
+        if(strcmp(token,"0:19") == 0) 
         {
-            Number_AC = Number_AC * -1;
+            *opcode = 0b00001101;
         }
-        if (MBR[0] == 1)
+        else if(strcmp(token,"20:39") == 0)
         {
-            Number_MBR = Number_MBR * -1;
+            *opcode = 0b00001110;
         }
-
-        long long int Result = Number_AC + Number_MBR;
-
-        int size;
-        Decimal_to_Binary(Result, Temporary_Register, &size);
-
-        if (Result < 0) // Setting the Sign Bit
-        {
-            Temporary_Register[0] = 1;
-        }
-
-        return Temporary_Register;
     }
-
-    else if (Type_Of_Operation == 5) // ADD |M(X)|)
+    else if (strcmp(str_lida, "JUMP+-M") == 0) 
     {
-        // So we have to perform : |MBR| + AC;
-        // We don't care about overflow - no flags as of now, we just truncate extra bits
-
-        // First we will take Absolute value of MBR
-        long long int Temporary_MBR_Value[40];
-        for (int i = 0; i < 40; i++)
+        token = strtok(str_lida_backup, delimitador_jump);
+        token = strtok(NULL, delimitador_final);
+        if(strcmp(token,"0:19") == 0) 
         {
-            Temporary_MBR_Value[i] = MBR[i];
+            *opcode = 0b00001111;
         }
-        if (Temporary_MBR_Value[0] == 1)
+        else if(strcmp(token,"20:39") == 0) 
         {
-            Temporary_MBR_Value[0] = 0;
+            *opcode = 0b00010000;
         }
-
-        // Next, we calculate addition as usual
-        long long int Number_AC = Binary_to_Decimal(AC, 1);
-        long long int Number_MBR = Binary_to_Decimal(Temporary_MBR_Value, 1);
-
-        if (AC[0] == 1)
-        {
-            Number_AC = Number_AC * -1;
-        }
-
-        // Since we know that Temporary_MBR_Value is always +ve, we do not need to check the sign bit of Temporary_MBR_Value
-
-        long long int Result = Number_AC + Number_MBR;
-        int size;
-        Decimal_to_Binary(Result, Temporary_Register, &size);
-
-        if (Result < 0) // Setting the Sign Bit
-        {
-            Temporary_Register[0] = 1;
-        }
-
-        return Temporary_Register;
     }
-
-    else if (Type_Of_Operation == 6) // SUB M(X)
+    else if (strcmp(str_lida, "ADD-M") == 0) 
     {
-        // Notice that the number to be subtracted is in the MBR already!
-        // So we have to perform : AC - MBR
-        // We don't care about overflow - no flags as of now, we just truncate extra bits
-
-        long long int Number_AC = Binary_to_Decimal(AC, 1);
-        long long int Number_MBR = Binary_to_Decimal(MBR, 1);
-
-        if (AC[0] == 1)
-        {
-            Number_AC = Number_AC * -1;
-        }
-        if (MBR[0] == 1)
-        {
-            Number_MBR = Number_MBR * -1;
-        }
-
-        long long int Result = Number_AC - Number_MBR;
-        int size;
-        Decimal_to_Binary(Result, Temporary_Register, &size);
-
-        if (Result < 0) // Setting the Sign Bit
-        {
-            Temporary_Register[0] = 1;
-        }
-
-        return Temporary_Register;
+        *opcode = 0b00000101;
     }
-
-    else if (Type_Of_Operation == 7) // SUB |M(X)|
+    else if (strcmp(str_lida, "ADD-|M") == 0)
     {
-        // So we have to perform : AC - |MBR|;
-        // We don't care about overflow - no flags as of now, we just truncate extra bits
-
-        for (int i = 0; i < 40; i++)
-        {
-            Temporary_Register[i] = 0;
-        }
-
-        long long int Temporary_MBR[40];
-        for (int i = 0; i < 40; i++)
-        {
-            Temporary_MBR[i] = MBR[i];
-        }
-
-        if (Temporary_MBR[0] == 1)
-        {
-            Temporary_MBR[0] = 0;
-        }
-
-        long long int Number_AC = Binary_to_Decimal(AC, 1);
-        long long int Number_MBR = Binary_to_Decimal(Temporary_MBR, 1);
-
-        if (AC[0] == 1)
-        {
-            Number_AC = Number_AC * -1;
-        }
-
-        // Since we know that Temporary_MBR is always positive, we do not need to check the sign bit of Temporary_MBR
-
-        long long int Result = Number_AC - Number_MBR;
-        int size;
-        Decimal_to_Binary(Result, Temporary_Register, &size);
-
-        if (Result < 0) // Setting the Sign Bit
-        {
-            Temporary_Register[0] = 1;
-        }
-
-        return Temporary_Register;
+        *opcode = 0b00000111;
     }
-    else if (Type_Of_Operation == 8) // MUL M(X)
+    else if (strcmp(str_lida, "SUB-M") == 0) 
     {
-        // Notice that the number to be multiplied is in the MBR already!
-        // So we have to perform : MQ * MBR;
-        // We don't care about overflow - no flags as of now, we just truncate extra bits
-
-        long long int Number_MQ = Binary_to_Decimal(MQ, 1);
-        long long int Number_MBR = Binary_to_Decimal(MBR, 1);
-
-        if (MQ[0] == 1)
-        {
-            Number_MQ = Number_MQ * -1;
-        }
-        if (MBR[0] == 1)
-        {
-            Number_MBR = Number_MBR * -1;
-        }
-
-        long long int Result = Number_MQ * Number_MBR;
-
-        int size;
-        Decimal_to_Binary(Result, Temporary_Register, &size);
-
-        if (Result < 0) // Setting the Sign Bit
-        {
-            Temporary_Register[0] = 1;
-        }
-
-        return Temporary_Register;
+        *opcode =  0b00000110;
     }
-
-    else if (Type_Of_Operation == 9) // DIV M(X) (Performing Remainder Part)
+    else if (strcmp(str_lida, "SUB-|M") == 0) 
     {
-        // Notice that the divisor is in the MBR already!
-        // So we have to perform : AC % MBR;
-        // We don't care about overflow - no flags as of now, we just truncate extra bits
-
-        for (int i = 0; i < 40; i++)
-        {
-            Temporary_Register[i] = 0;
-        }
-
-        long long int Number_AC = Binary_to_Decimal(AC, 1);
-        long long int Number_MBR = Binary_to_Decimal(MBR, 1);
-
-        if (AC[0] == 1)
-        {
-            Number_AC = Number_AC * -1;
-        }
-        if (MBR[0] == 1)
-        {
-            Number_MBR = Number_MBR * -1;
-        }
-
-        long long int Remainder = Number_AC % Number_MBR;
-
-        if (Remainder < 0) // In case Remainder is negative, we make it positive
-        {
-            Remainder = Remainder + Number_MBR;
-        }
-
-        int size;
-        Decimal_to_Binary(Remainder, Temporary_Register, &size);
-
-        if (Remainder < 0) // Setting the Sign Bit
-        {
-            Temporary_Register[0] = 1;
-        }
-
-        return Temporary_Register;
+        *opcode = 0b00001000;
     }
-
-    else if (Type_Of_Operation == 10) // DIV M(X) (Performing Quotient Part)
+    else if (strcmp(str_lida, "MUL-M") == 0) 
     {
-        // Notice that the divisor is in the MBR already!
-        // So we have to perform : AC / MBR;
-        // We don't care about overflow - no flags as of now, we just truncate extra bits
-
-        for (int i = 0; i < 40; i++)
-        {
-            Temporary_Register[i] = 0;
-        }
-
-        long long int Number_AC = Binary_to_Decimal(AC, 1);
-        long long int Number_MBR = Binary_to_Decimal(MBR, 1);
-
-        if (AC[0] == 1)
-        {
-            Number_AC = Number_AC * -1;
-        }
-        if (MBR[0] == 1)
-        {
-            Number_MBR = Number_MBR * -1;
-        }
-
-        long long int Quotient = Number_AC / Number_MBR; // The Quotient CAN be negative
-
-        if (Quotient < 0) // If Quotient is negative, then we must reflect it in the sign bit as well!
-        {
-            Temporary_Register[0] = 1;
-        }
-
-        int size;
-        Decimal_to_Binary(Quotient, Temporary_Register, &size);
-
-        return Temporary_Register;
+        *opcode = 0b00001011;
     }
-
-    else if (Type_Of_Operation == 11) // LSH
+    else if (strcmp(str_lida, "DIV-M") == 0) 
     {
-        for (long long int j = 1; j <= 38; j++)
-        {
-            Temporary_Register[j] = Temporary_Register[j + 1];
-        }
-        Temporary_Register[39] = 0;
-        return Temporary_Register;
+        *opcode = 0b00001100;
     }
-
-    else if (Type_Of_Operation == 12) // RHS
+    else if (strcmp(str_lida, "LSH") == 0) 
     {
-        for (long long int j = 39; j >= 2; j--)
-        {
-            Temporary_Register[j] = Temporary_Register[j - 1];
-        }
-        Temporary_Register[1] = 0;
-        return Temporary_Register;
+        *opcode = 0b00010100;
     }
-
-    else if (Type_Of_Operation == 13) // STOR M(X, 8:19)
+    else if (strcmp(str_lida, "RSH") == 0) 
     {
-        for (long long int j = 8; j < 20; j++)
-        {
-            Temporary_Register[j] = Temporary_Register[j + 20];
-        }
-        return Temporary_Register;
+       *opcode = 0b00010101;
     }
-
-    else if (Type_Of_Operation == 14) // STOR M(X, 28:39)
+    else if (strcmp(str_lida, "EXIT") == 0) 
     {
-        for (long long int j = 28; j < 40; j++)
-        {
-            Temporary_Register[j] = Temporary_Register[j];
-        }
-        return Temporary_Register;
+        *opcode = 0b11111111;
     }
-
-    else if (Type_Of_Operation == 15) // Before finding a/b and a%b, check if b is equal to 0 or not
-    {
-        static long long int Zero_Check[40]; // Zero_Check[39] == 0 if b is equal to 0, else 1
-        long long int Number_MBR = Binary_to_Decimal(MBR, 1);
-        if (Number_MBR != 0)
-        {
-            Zero_Check[39] = 1;
-        }
-        return Zero_Check;
-    }
-
-    else // This will never be reached, but to prevent compiler warnings, we need to return something
-    {
-        static long long int to_return[40]; // We return an empty array of 40 bits
-        return to_return; // Note: This will never be reached!
+    else
+    { 
+        *opcode = 0b00000000;
     }
 }
 
-void Fetch_Cycle_Left()
+void imprime_memory(FILE *arqSaida, unsigned char *memory, unsigned char *inicio_memory)
 {
-    MAR = PC;
-    long long int X = Binary_to_Decimal(MAR, 0);
-    MBR = Memory[X];
+    memory = inicio_memory;
+    for (int i = 0; i < 2; i++) //colocar 4096 depois
+    {
+        long int palavra_temp = 0;
+        char string_temp[BUFFER_SIZE];
+        int j = 0;
 
-    for(long long int j = 20; j < 40; j++)    //Copy RHS Instruction to IBR
-    {
-        IBR[j-20] = MBR[j];
-    }
+        while(j < 5)
+        {
+            palavra_temp = palavra_temp << 8;
+            palavra_temp = palavra_temp | *memory;
+            memory++;
+            j++;
+        }
 
-    for(long long int j = 0 ; j < 8; j++)     //Copy OpCode to IR
-    {
-        IR[j] = MBR[j];
-    }
-    for(long long int j = 8; j < 20; j++)     //Copy Address to MAR
-    {
-        MAR[j-8] = MBR[j];
+        //converter palavra_temp em string_temp
+        sprintf(string_temp, "%ld", palavra_temp);
+        //escrever string_temp no arquivo de saida
+        fputs(string_temp, arqSaida);
+        fputc('\n', arqSaida);
     }
 }
 
-void Fetch_Cycle_Right_No_Deviation()
+int main(int argc, char *argv[])
 {
-    for(long long int j = 0 ; j < 8; j++)     //Copy OpCode of RHS Instruction to IR
-    {
-        IR[j] = IBR[j];
-    }
-    for(long long int j = 8; j < 20; j++)     //Copy Address of RHS Instruction to MAR
-    {
-        MAR[j-8] = IBR[j];
-    }
-    Increment_PC();
-}
+    unsigned char *memory = (unsigned char *)malloc(4096 * 5 * sizeof(char *));
+    unsigned char *inicio_memory; //variavel que recebe o endereco do inicio da memoria
+    inicio_memory = memory; //variavel que recebe o endereco do inicio da memoria
 
-void Fetch_Cycle_Right_Deviation()
-{
-    MAR = PC;
-    long long int X = Binary_to_Decimal(MAR, 0);
-    MBR = Memory[X];
+    FILE *arq;
+    FILE *arquivo_saida;
 
-    for(long long int j = 20; j < 28; j++)    //Copy OpCode of RHS Instruction to IR
+    char linha_lida[BUFFER_SIZE];
+    char linha_lida2[BUFFER_SIZE];
+    char linha_lida_backup[BUFFER_SIZE];
+    char linha_lida2_backup[BUFFER_SIZE];
+
+    
+    if (argc == 5 && (strcmp(argv[1], "-p") == 0) && (strcmp(argv[3], "-m") == 0))
     {
-        IR[j-20] = MBR[j];
+        printf("Argumentos válidos!\n");
     }
-    for(long long int j = 28; j < 40; j++)    //Copy Address of RHS Instruction to MAR
+    else
     {
-        MAR[j-28] = MBR[j];
+        printf("Erro: Abra o arquivo como o seguinte exemplo:\n");
+        printf("./nomeExecutavel -p arqEntrada.ias.txt -m arqSaida.ias.txt\n");
+        exit(1);
     }
 
-    Increment_PC();
-}
-
-/*
-    FOR THE EXECUTION CYCLE, THE RETURN VALUES OF THE FUNCTION ARE: ==
-
-    --> 0 : The instruction has executed successfully.
-
-    --> 1 : Start Fetch_Cycle_Left(), i.e. we have to execute left instruction
-
-    --> 2 : Start Fetch_Cycle_Right_No_Deviation(), i.e. we have to execute
-            right instruction after left instruction of same memory address
-            has been executed
-
-    --> 3 : Start Fetch_Cycle_Right_Deviation(), i.e. we have to execute the
-            the right instruction but this right instruction is NOT the
-            Right Instruction of the address whose Left instruction was
-            executed earlier
-
-    --> -1 : STOP! The HALT has been issued, or something wrong has happened
-             (for example, JUMP M(X,0:19) or JUMP M(X,0:19) has been issued
-              but M(X) contains data (and NOT instruction) :(
-*/
-
-long long int Execution_Cycle()
-{
-    if (OPcode_Match("00001010") == 1) // LOAD MQ
+    if ((arq = fopen(argv[2], "r")) == NULL)
     {
-        for (long long int j = 0; j < 40; j++)
+        printf("Erro ao abrir o aquivo!");
+        exit(1);
+    }
+
+    int i = 0;
+    while (fgets(linha_lida, BUFFER_SIZE, arq) != NULL)
+    {
+        char value = linha_lida[0];
+        if ((value >= 48 && value <= 57) || value == 45)
         {
-            AC[j] = MQ[j];
+            // Para os dados
+            linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
+            i++;
         }
-        return 0;
-    }
+        if((fgets(linha_lida2, BUFFER_SIZE, arq) != NULL))
+        {
+            //Isso vai acontecer caso a segunda instrucao lida exista.
+            long int palavra = 0;
 
-    else if (OPcode_Match("00001001") == 1) // LOAD MQ,M(X)
-    {
-        long long int X = Binary_to_Decimal(MAR, 0); // Decode the Address
-        MBR = Memory[X];                            // Transfer M(X) to MBR
-        for (long long int j = 0; j < 40; j++)
-        {
-            MQ[j] = MBR[j]; // Transfer contents of MBR to MQ
-        }
-        return 0;
-    }
+            int address1;
+            int address2;
+            char str1[BUFFER_SIZE] = "0";
+            char str2[BUFFER_SIZE] = "0";
+                    
+            unsigned char opcode1;
+            unsigned char opcode2;
 
-    else if (OPcode_Match("00100001") == 1) // STOR M(X)
-    {
-        for (long long int j = 0; j < 40; j++)
-        {
-            MBR[j] = AC[j]; // Transfer contents of AC to MBR (AC has NO direct connection to MEMORY)
-        }
-        long long int X = Binary_to_Decimal(MAR, 0);
-        for (long long int j = 0; j < 40; j++)
-        {
-            Memory[X][j] = MBR[j];
-        }
-        return 0;
-    }
-
-    else if (OPcode_Match("00000001") == 1) // LOAD M(X)
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X];
-        for (long long int j = 0; j < 40; j++)
-        {
-            AC[j] = MBR[j]; // This was added during Testing Phase
-        }
-        return 0;
-    }
-
-    else if (OPcode_Match("00000010") == 1) // LOAD -M(X)
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X];
-        // Now data of MBR is sent to ALU, which calculates -M(X) and stores it in AC
-        long long int *result = ALU(1);
-        for (long long int j = 0; j < 40; j++)
-        {
-            AC[j] = result[j];
-        }
-        return 0;
-    }
-
-    else if (OPcode_Match("00000011") == 1) // LOAD |M(X)|
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X];
-        // Now data of MBR is sent to ALU, which calculates |M(X)| and stores it in AC
-        long long int *result = ALU(2);
-        for (long long int j = 0; j < 40; j++)
-        {
-            AC[j] = result[j];
-        }
-        return 0;
-    }
-
-    else if (OPcode_Match("00000100") == 1) // LOAD -|M(X)|
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X];
-        // Now data of MBR is sent to ALU, which calculates -|M(X)| and stores it in AC
-        long long int *result = ALU(3);
-        for (long long int j = 0; j < 40; j++)
-        {
-            AC[j] = result[j];
-        }
-        return 0;
-    }
-
-    else if (OPcode_Match("00001101") == 1) // JUMP M(X,0:19)
-    {
-        for (long long int j = 0; j < 12; j++)
-        {
-            PC[j] = MAR[j];
-        }
-        return 1;
-    }
-
-    else if (OPcode_Match("00001110") == 1) // JUMP M(X,20:39)
-    {
-        for (long long int j = 0; j < 12; j++)
-        {
-            PC[j] = MAR[j + 20];
-        }
-        return 3; // We are jumping to RHS instruction - We need to deviate flow!
-    }
-
-    else if (OPcode_Match("00001111") == 1) // JUMP+ M(X,0:19)
-    {
-        if (AC[0] == 0) // Since the number in AC is non-negative, we take the next instruction from the left half of M(X)
-        {
-            for (long long int j = 0; j < 12; j++)
+            if (linha_lida[strlen(linha_lida) - 1] == '\n')
             {
-                PC[j] = MAR[j];
+                linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
             }
-            return 1;
+            if (linha_lida2[strlen(linha_lida2) - 1] == '\n')
+            {
+                 linha_lida2[strlen(linha_lida2) - 1] = '\0'; // retirando o '\n' da string lida
+            }
+            
+            strcpy(linha_lida_backup,linha_lida);
+            strcpy(linha_lida2_backup,linha_lida2);
+
+            //instrução da esquerda
+            finding_opcode(linha_lida_backup, &opcode1);
+            address1 = finding_address(linha_lida, str1);
+                    
+            //instrução da direita
+            finding_opcode(linha_lida2_backup, &opcode2);
+            address2 = finding_address(linha_lida2, str2);
+
+            //palavra final
+            printf("%d",i);
+            palavra = opcode1 << 12;
+            palavra = palavra | address1;
+            palavra = palavra << 8;
+            palavra = palavra | opcode2;
+            palavra = palavra << 12;
+            palavra = palavra | address2;
+                    
+            //Carregamento da palavra final para a memoria
+            unsigned char temp;
+            for(int i = 4; i >= 0; i--)
+            {
+                temp = (palavra >> (8*i)) & UNSIGNED_CHAR_SIZE;
+                *memory = temp;
+                memory++;
+            }
+            i++;
         }
-        else
-        {
-            return 0;
-        }
     }
 
-    else if (OPcode_Match("00010000") == 1) // JUMP+ M(X,20:39)
+    if ((arquivo_saida = fopen(argv[4], "w")) == NULL)
     {
-        if (AC[0] == 0) // Since the number in AC is non-negative, we take the next instruction from the right half of M(X)
-        {
-            for (long long int j = 0; j < 12; j++)
-            {
-                PC[j] = MAR[j + 20];
-            }
-            return 3; // We are jumping to RHS instruction - We need to deviate flow!
-        }
-        else
-        {
-            return 0;
-        }
+            printf("Erro ao abrir o aquivo!");
+            exit(1);
     }
 
-    else if (OPcode_Match("00000101") == 1) // ADD M(X)
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X]; // Perform Memory Read
-        long long int *result = ALU(4); // Perform Addition and store the result in ALU
-        for (long long int j = 0; j < 40; j++)
-        {
-            AC[j] = result[j];
-        }
-        return 0;
-    }
+    imprime_memory(arquivo_saida, memory, inicio_memory);
 
-    else if (OPcode_Match("00000111") == 1) // ADD |M(X)|
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X]; // Perform Memory Read
-        long long int *result = ALU(5);
-        for (long long int j = 0; j < 40; j++)
-        {
-            AC[j] = result[j];
-        }
-        return 0;
-    }
+    memory = inicio_memory;
+    free(memory);
+    fclose(arquivo_saida);
+    fclose(arq);
+    printf("Fim do programa, sucesso!");
 
-    else if (OPcode_Match("00000110") == 1) // SUB M(X)
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X];
-        long long int *result = ALU(6);
-        for (long long int j = 0; j < 40; j++)
-        {
-            AC[j] = result[j];
-        }
-        return 0;
-    }
-    else if (OPcode_Match("00001000") == 1) // SUB |M(X)|
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X];
-        long long int *result = ALU(7);
-        for (long long int j = 0; j < 40; j++)
-        {
-            AC[j] = result[j];
-        }
-        return 0;
-    }
-
-    else if(OPcode_Match("00001011") == 1)      //MUL M(X)
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X];
-        vector <long long int> Result = ALU(8);
-
-        /*
-          The result is 80 bits (including sign bit)
-          out of which the first 40 MSBs would be
-          stored in AC, while the remaining 40 bits
-          would be stored in MQ
-        */
-
-        //Copying first 40 bits to AC
-        for(long long int j = 0 ; j < 40; j++)
-        {
-            AC[j] = Result[j];
-        }
-
-        //Copying next 40 bits to MQ
-        for(long long int j = 40; j < 80; j++)
-        {
-            MQ[j-40] = Result[j];
-        }
-        return 0;
-    }
-
-    else if(OPcode_Match("00001100") == 1)     //DIV M(X)
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X];
-
-        /*
-          For this operation, we have two result,
-          the Quotient is stored in MQ, while the
-          remainder is stored in AC, i.e.
-
-          MQ = AC/MBR
-          AC = AC % MBR
-
-          Before doing the actual operations,
-          we must check if divisor is 0 or not
-        */
-
-        vector <long long int> Check_Divisor = ALU(15);
-        if(Check_Divisor[39] == 0)  //So that means that divisor is 0! We can't divide anything by 0
-        {
-            return -1;      //HALT the machine!
-        }
-
-        MQ = ALU(10);       //Loading MQ with the Quotient
-        AC = ALU(9);       //Loading AC with the Remainder
-        return 0;
-    }
-
-    else if(OPcode_Match("00010100") == 1)      //LSH
-    {
-        AC = ALU(11);
-        return 0;
-    }
-
-    else if(OPcode_Match("00010101") == 1)      //RHS
-    {
-        AC = ALU(12);
-        return 0;
-    }
-
-    else if(OPcode_Match("00010010") == 1)      //STOR M(X, 8:19)
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X];
-        MBR = ALU(13);
-        Memory[X] = MBR;
-        return 0;
-    }
-
-    else if(OPcode_Match("00010011") == 1)      //STOR M(X, 28:39)
-    {
-        long long int X = Binary_to_Decimal(MAR, 0);
-        MBR = Memory[X];
-        MBR = ALU(14);
-        Memory[X] = MBR;
-        return 0;
-    }
-
-    else if(OPcode_Match("11111111") == 1)      //HALT (Custom Instruction)
-    {
-        return -1;
-    }
-
-    else if(OPcode_Match("00000000") == 1)      //There is no left instruction, but there might be right instruction
-    {
-        return 0;       //We allow for normal execution since there might be right instruction (and that might be probably HALT!)
-    }
-
-    else        //Although this will never be reached (unless someone programs memory incorrectly!)
-    {
-        return 0;      //We will still continue on, as there is nothing to be done...
-    }
-}
-
-int main()
-{
-    long long int Display_Memory_Start = 0;     //Once the IAS machine is executed, starting from this address, value of memory at this address will be displayed
-    long long int Display_Memory_End = 999;     //The value of memory till this address will be displayed once the IAS machine is executed
-
-    //Preprogram the memory
-    //Programming the memory for calculating the sum of first 10 natural numbers
-
-    Program_Memory(0, "0000000100000110011000000101000001100100");
-    Program_Memory(1, "0010000100000110011000000001000001100100");
-    Program_Memory(2, "0000011000000110010100100001000001100100");
-    Program_Memory(3, "0000111100000000000011111111000000000000");
-
-    Program_Memory(100, "0000000000000000000000000000000000001010");
-    Program_Memory(101, "0000000000000000000000000000000000000001");
-    Program_Memory(102, "0000000000000000000000000000000000000000");
-
-    Display_Memory_Start = 102;
-    Display_Memory_End = 102;
-
-    //Reset the IAS
-    Reset_IAS();
-
-    while(1)
-    {
-        if(Flag == 1)      //So the left instruction has not been executed and we've to execute it
-        {
-            //Start the Fetch Cycle for RHS Instruction
-            Fetch_Cycle_Left();
-
-            //Start the execute Cycle, and store the result
-            long long int Result = Execution_Cycle();
-
-            if(Result == 0)     //Normal execution of LHS instruction, we know that we will Start the cycle for RHS instruction
-            {
-                Flag = 2;  //Left instruction has been executed successfully
-            }
-            else if(Result == 1)        //So the instruction that was executed was JUMP M(X,0:19)
-            {
-                Flag = 1;      //We will again start the Fetch Cycle for a new LHS instruction
-            }
-            else if(Result == 3)        //So the instruction that was executed was JUMP M(X,20:39)
-            {
-                Flag = 3;       //We will start the Fetch Cycle for RHS instruction but with deviation
-            }
-            else if(Result == -1)   //HALT the Machine!!
-            {
-                break;
-            }
-            else        //Although this will never be reached, yet as a default case, we will HALT the IAS
-            {
-                break;
-            }
-        }
-        else if(Flag == 2)
-        {
-            //Start Fetch Cycle for RHS instruction (Without deviation)
-            Fetch_Cycle_Right_No_Deviation();
-
-            //Start the Execute Cycle, and store the result
-            long long int Result = Execution_Cycle();
-
-            if(Result == 0)     //Normal execution of RHS instruction, we know that we will Start the cycle for LHS instruction of next address
-            {
-                Flag = 1;
-            }
-            else if(Result == 1)       //So the instruction that was executed was JUMP M(X,0:19)
-            {
-                Flag = 1;      //We will again start the Fetch Cycle for a new LHS instruction
-            }
-            else if(Result == 3)        //So the instruction that was executed was JUMP M(X,20:39)
-            {
-                Flag = 3;       //We will start the Fetch Cycle for RHS instruction but with deviation
-            }
-            else if(Result == -1)   //HALT the Machine!!
-            {
-                break;
-            }
-            else        //Although this will never be reached, yet as a default case, we will HALT the IAS
-            {
-                break;
-            }
-        }
-        else if(Flag == 3)
-        {
-            //Start Fetch Cycle for RHS instruction (With deviation)
-            Fetch_Cycle_Right_Deviation();
-
-            //Start the Execute Cycle, and store the result
-            long long int Result = Execution_Cycle();
-
-            if(Result == 0)     //Normal execution of RHS instruction, we know that we will Start the cycle for LHS instruction of next address
-            {
-                Flag = 1;
-            }
-            else if(Result == 1)       //So the instruction that was executed was JUMP M(X,0:19)
-            {
-                Flag = 1;      //We will again start the Fetch Cycle for a new LHS instruction
-            }
-            else if(Result == 3)        //So the instruction that was executed was JUMP M(X,20:39)
-            {
-                Flag = 3;       //We will start the Fetch Cycle for RHS instruction but with deviation
-            }
-            else if(Result == -1)   //HALT the Machine!!
-            {
-                break;
-            }
-            else        //Although this will never be reached, yet as a default case, we will HALT the IAS
-            {
-                break;
-            }
-        }
-        else
-        {
-            break;
-        }
-        //display_IAS();  //This piece of code displays the State of IAS machine after each instruction has been executed
-        //cout<<"----------------------------------------"<<"\n";
-    }
-
-    //This part of the program displays the values in Memory
-    for(long long int j = Display_Memory_Start; j <= Display_Memory_End; j++)
-    {
-        cout<<" Displaying Memory "<<j<<" : ";
-        display_2(Memory[j]);
-        cout<<" : Decimal Value : "<<Binary_to_Decimal(Memory[j], 1);
-        cout<<"\n";
-    }
     return 0;
 }

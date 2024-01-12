@@ -4,6 +4,7 @@
 int main()
 {
     int *x = (int *) malloc(10 * sizeof(int));
+    int *temp = x; //armazena o ponto inicial de da memoria/vetor
     //char *m = (char *) malloc(4096 * 5 * sizeof(char));
 
     if(x)
@@ -25,6 +26,9 @@ int main()
         x += 1;
         printf("\nx: %x", x);
         printf("\nx: %d", *x);
+        x = temp;
+        printf("\nx: %x", x);
+        printf("\nx: %d\n", *x);
     }
     else{
         printf("Nao foi possivel alocar a memoria");
