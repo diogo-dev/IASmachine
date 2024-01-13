@@ -199,7 +199,7 @@ void finding_opcode(char *str_lida, unsigned char *opcode)
 void imprime_memory(FILE *arqSaida, unsigned char *memory, unsigned char *inicio_memory)
 {
     memory = inicio_memory;
-    for (int i = 0; i < 2; i++) //colocar 4096 depois
+    for (int i = 0; i < 4096; i++) //colocar 4096 depois
     {
         long int palavra_temp = 0;
         char string_temp[BUFFER_SIZE];
@@ -261,9 +261,49 @@ int main(int argc, char *argv[])
         {
             // Para os dados
             linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
-            i++;
+            if(value == 45)
+            {
+                //Quando o dado for negativo
+                int j = 0;
+                char dado_positivo_string[sizeof(linha_lida)-1];
+                //Retirando o "-" do dado
+                for (int i = 1; i < sizeof(linha_lida); i++)
+                {
+                    dado_positivo_string[j] = linha_lida[i];
+                    j++;
+                }
+                unsigned long int dado;
+                unsigned long int dado_final = 0;
+                //Transformando em um inteiro e mandando para memoria
+                dado = atoi(dado_positivo_string);
+                dado_final = dado_final | 1;
+                dado_final = dado_final << 39;
+                dado_final |= dado;
+                unsigned char temp;
+                for(int i = 4; i >= 0; i--)
+                {
+                    temp = (dado_final >> (8*i)) & UNSIGNED_CHAR_SIZE;
+                    *memory = temp;
+                    memory++;
+                }
+            }
+            else 
+            {
+                //Quando o dado nao for negativo
+                long int dado, dado_final = 0;
+                dado = atoi(linha_lida);
+                dado_final = dado_final | dado;
+                printf("%li\n",dado_final);
+                unsigned char temp;
+                for(int i = 4; i >= 0; i--)
+                {
+                    temp = (dado_final >> (8*i)) & UNSIGNED_CHAR_SIZE;
+                    *memory = temp;
+                    memory++;
+                }
+            }
         }
-        if((fgets(linha_lida2, BUFFER_SIZE, arq) != NULL))
+        else if((fgets(linha_lida2, BUFFER_SIZE, arq) != NULL))
         {
             //Isso vai acontecer caso a segunda instrucao lida exista.
             long int palavra = 0;
@@ -297,7 +337,6 @@ int main(int argc, char *argv[])
             address2 = finding_address(linha_lida2, str2);
 
             //palavra final
-            printf("%d",i);
             palavra = opcode1 << 12;
             palavra = palavra | address1;
             palavra = palavra << 8;
