@@ -199,7 +199,7 @@ void finding_opcode(char *str_lida, unsigned char *opcode)
 void imprime_memory(FILE *arqSaida, unsigned char *memory, unsigned char *inicio_memory)
 {
     memory = inicio_memory;
-    for (int i = 0; i < 4096; i++) //colocar 4096 depois
+    for (int i = 0; i < 4096; i++) 
     {
         long int palavra_temp = 0;
         char string_temp[BUFFER_SIZE];
@@ -221,11 +221,24 @@ void imprime_memory(FILE *arqSaida, unsigned char *memory, unsigned char *inicio
     }
 }
 
+void iniciar_memory(unsigned char *memory, unsigned char *iniciar_memory)
+{
+    for(int i = 0; i < (4096 * 5); i++)
+    {
+        *memory = 0;
+        memory++;
+    }
+    memory = iniciar_memory;
+}
+
 int main(int argc, char *argv[])
 {
     unsigned char *memory = (unsigned char *)malloc(4096 * 5 * sizeof(char *));
-    unsigned char *inicio_memory; //variavel que recebe o endereco do inicio da memoria
-    inicio_memory = memory; //variavel que recebe o endereco do inicio da memoria
+    unsigned char *inicio_memory; 
+
+    inicio_memory = memory; //variavel inicio_memory recebe o endereco do inicio da memoria
+
+    iniciar_memory(memory, inicio_memory); // iniciar a memoria com valor 0
 
     FILE *arq;
     FILE *arquivo_saida;
@@ -274,11 +287,13 @@ int main(int argc, char *argv[])
                 }
                 unsigned long int dado;
                 unsigned long int dado_final = 0;
-                //Transformando em um inteiro e mandando para memoria
+                //Transformando em um inteiro
                 dado = atoi(dado_positivo_string);
+                //colocando 1 no bit mais significativo
                 dado_final = dado_final | 1;
                 dado_final = dado_final << 39;
                 dado_final |= dado;
+                //mandando para a memoria
                 unsigned char temp;
                 for(int i = 4; i >= 0; i--)
                 {
@@ -290,14 +305,14 @@ int main(int argc, char *argv[])
             else 
             {
                 //Quando o dado nao for negativo
-                long int dado, dado_final = 0;
+                long int dado;
+                //Transformando em um inteiro
                 dado = atoi(linha_lida);
-                dado_final = dado_final | dado;
-                printf("%li\n",dado_final);
+                //Mandando para a memoria
                 unsigned char temp;
                 for(int i = 4; i >= 0; i--)
                 {
-                    temp = (dado_final >> (8*i)) & UNSIGNED_CHAR_SIZE;
+                    temp = (dado >> (8*i)) & UNSIGNED_CHAR_SIZE;
                     *memory = temp;
                     memory++;
                 }
@@ -310,6 +325,7 @@ int main(int argc, char *argv[])
 
             int address1;
             int address2;
+
             char str1[BUFFER_SIZE] = "0";
             char str2[BUFFER_SIZE] = "0";
                     
@@ -345,15 +361,52 @@ int main(int argc, char *argv[])
             palavra = palavra | address2;
                     
             //Carregamento da palavra final para a memoria
-            unsigned char temp;
+            unsigned char palavra_8bits;
             for(int i = 4; i >= 0; i--)
             {
-                temp = (palavra >> (8*i)) & UNSIGNED_CHAR_SIZE;
-                *memory = temp;
+                palavra_8bits = (palavra >> (8*i)) & UNSIGNED_CHAR_SIZE;
+                *memory = palavra_8bits;
                 memory++;
             }
-            i++;
         }
+        else
+        {
+            //caso exista somente a primeira instrucao na palavra
+            long int palavra = 0;
+
+            int address1;
+
+            char str1[BUFFER_SIZE] = "0";
+
+            unsigned char opcode1;
+
+            if (linha_lida[strlen(linha_lida) - 1] == '\n')
+            {
+                linha_lida[strlen(linha_lida) - 1] = '\0'; // retirando o '\n' da string lida
+            }
+
+            strcpy(linha_lida_backup,linha_lida);
+
+            //instrução da esquerda
+            //lembrando que nesse caso nao ha instrucao da direita
+            finding_opcode(linha_lida_backup, &opcode1);
+            address1 = finding_address(linha_lida, str1);
+
+            //palavra final
+            palavra = opcode1 << 12;
+            palavra = palavra | address1;
+            palavra = palavra << 20;
+
+            //Carregamento da palavra final para a memoria
+            unsigned char palavra_8bits;
+            for(int i = 4; i >= 0; i--)
+            {
+                palavra_8bits = (palavra >> (8*i)) & UNSIGNED_CHAR_SIZE;
+                *memory = palavra_8bits;
+                memory++;
+            }
+        }
+        i++;
     }
 
     if ((arquivo_saida = fopen(argv[4], "w")) == NULL)
@@ -368,7 +421,7 @@ int main(int argc, char *argv[])
     free(memory);
     fclose(arquivo_saida);
     fclose(arq);
-    printf("Fim do programa, sucesso!");
+    printf("Fim do programa, sucesso!\n");
 
     return 0;
 }
