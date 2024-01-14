@@ -12,27 +12,6 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 #define BUFFER_SIZE 40
 #define UNSIGNED_CHAR_SIZE 255
     
-double potencia(int base, int expoente) {
-    if(expoente == 0)
-        return 1;
-    else
-        return (base * potencia(base, expoente-1));
-}
-
-long long int binary_decimal(char *palavra)
-{
-    long long int dec = 0;
-    int i = 0;
-    int s;
-    s = strlen(palavra);
-    while( s-- ) {
-        if( palavra[s] == '0' || palavra[s] == '1' ) {
-            dec = dec + potencia(2, i++) * (palavra[s] - '0');
-        }
-    };
-    return dec;
-}
-
 int finding_address(char *str_lida, char *address)
 {
     int i = 0;
@@ -278,7 +257,7 @@ int main(int argc, char *argv[])
             {
                 //Quando o dado for negativo
                 int j = 0;
-                char dado_positivo_string[sizeof(linha_lida)-1];
+                char dado_positivo_string[sizeof(linha_lida)];
                 //Retirando o "-" do dado
                 for (int i = 1; i < sizeof(linha_lida); i++)
                 {
@@ -294,11 +273,11 @@ int main(int argc, char *argv[])
                 dado_final = dado_final << 39;
                 dado_final |= dado;
                 //mandando para a memoria
-                unsigned char temp;
+                unsigned char palavra_8bits;
                 for(int i = 4; i >= 0; i--)
                 {
-                    temp = (dado_final >> (8*i)) & UNSIGNED_CHAR_SIZE;
-                    *memory = temp;
+                    palavra_8bits = (dado_final >> (8*i)) & UNSIGNED_CHAR_SIZE;
+                    *memory = palavra_8bits;
                     memory++;
                 }
             }
@@ -309,11 +288,11 @@ int main(int argc, char *argv[])
                 //Transformando em um inteiro
                 dado = atoi(linha_lida);
                 //Mandando para a memoria
-                unsigned char temp;
+                unsigned char palavra_8bits;
                 for(int i = 4; i >= 0; i--)
                 {
-                    temp = (dado >> (8*i)) & UNSIGNED_CHAR_SIZE;
-                    *memory = temp;
+                    palavra_8bits = (dado >> (8*i)) & UNSIGNED_CHAR_SIZE;
+                    *memory = palavra_8bits;
                     memory++;
                 }
             }
