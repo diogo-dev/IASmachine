@@ -10,7 +10,65 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 #include <string.h>
 
 #define BUFFER_SIZE 40
-#define UNSIGNED_CHAR_SIZE 255
+#define UNSIGNED_CHAR_SIZE 255 //0b11111111
+#define BITWISE_SIZE 4095 //0b111111111111
+
+typedef struct IAS
+{
+    //Program Control Unit
+    int MAR = 0; //MAR(12)
+    int IR = 0; //IR(8)
+    int IBR = 0; //IBR(20)
+    int PC = 0; //PC(12)
+
+    //Arithmetic-logic unit (ALU)
+    long AC = 0; //AC(40)
+    long MQ = 0; //MQ(40)
+    long MBR = 0; //MBR(40)
+}banco_de_registradores;
+
+//implementar o fluxograma meio que parecido com o do repositorio do github c++
+//O UC vai ser usar essas funções do fluxograma (são as condições no fluxo -- triangulos)
+//a ULA ainda nao sei direito
+
+void fetch_cycle(banco_de_registradores *br, unsigned char *memory)
+{
+    //Is next instruction in IBR ?
+    if(br->IBR != 0)
+    {
+        //No memory access required
+        int temp1 = br->IBR; //armazena o seu valor em uma variavel temp
+        //IR <- IBR(0:7)
+        br->IBR = br->IBR >> 12;
+        br->IR = br->IR | br->IBR;
+        //MAR <- IBR(8:19)
+        br->IBR = temp1; //restaura o seu valor de 20bits
+        br->MAR = br->IBR & BITWISE_SIZE;
+        //PC <- PC + 1
+        memory = br->PC;
+        memory = memory + 5;
+        br->PC = memory;
+    }
+    else
+    {
+        //Memory access required
+        //MAR <- PC
+        br->MAR = br->PC;
+        //MBR <- M(MAR)
+        memory = br->MAR;
+        while(j < 5)
+        {
+            br->MBR = br->MBR << 8;
+            br->MBR = br->MBR | *memory;
+            memory++;
+            j++;
+        }
+        //Left instruction required ?
+        
+
+    }
+}
+
     
 int finding_address(char *str_lida, char *address)
 {
@@ -276,7 +334,7 @@ int main(int argc, char *argv[])
                 unsigned char palavra_8bits;
                 for(int i = 4; i >= 0; i--)
                 {
-                    palavra_8bits = (dado_final >> (8*i)) & UNSIGNED_CHAR_SIZE;
+                    palavra_8bits = (dado_final >> (8*i)) & UNSIGNED_CHAR_SIZE; 
                     *memory = palavra_8bits;
                     memory++;
                 }
