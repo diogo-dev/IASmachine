@@ -11,7 +11,8 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 
 #define BUFFER_SIZE 40
 #define UNSIGNED_CHAR_SIZE 255 //0b11111111
-#define BITWISE_SIZE 4095 //0b111111111111
+#define BITWISE_12 4095 //0b111111111111
+#define BITWISE_20 1048575 //0b11111111111111111111
 
 typedef struct IAS
 {
@@ -26,6 +27,16 @@ typedef struct IAS
     long MQ = 0; //MQ(40)
     long MBR = 0; //MBR(40)
 }banco_de_registradores;
+
+typedef struct ULA
+{
+    int a;
+    int b;
+    int c;
+    int resultado;
+
+}operacao;
+
 
 //implementar o fluxograma meio que parecido com o do repositorio do github c++
 //O UC vai ser usar essas funções do fluxograma (são as condições no fluxo -- triangulos)
@@ -43,7 +54,7 @@ void fetch_cycle(banco_de_registradores *br, unsigned char *memory)
         br->IR = br->IR | br->IBR;
         //MAR <- IBR(8:19)
         br->IBR = temp1; //restaura o seu valor de 20bits
-        br->MAR = br->IBR & BITWISE_SIZE;
+        br->MAR = br->IBR & BITWISE_12;
         //PC <- PC + 1
         memory = br->PC;
         memory = memory + 5;
@@ -63,13 +74,72 @@ void fetch_cycle(banco_de_registradores *br, unsigned char *memory)
             memory++;
             j++;
         }
-        //Left instruction required ?
-        
+        //Left instruction required ? usar flag
+        int temp3;
+        int temp4;
+        temp3 = br->MBR & BITWISE_20;
+        if(temp3 == 0)
+        {
+            // instrucao da direita nao existe
+            br->MBR = br->MBR >> 20;
+            temp4 = br->MBR;
+            br->MBR = br->MBR >> 12;
+            br->IR = br->IR | br->MBR;
+            
+            br->MBR = temp4;
+            br->MAR = br->MBR & BITWISE_12;
+            //PC <- PC + 1
+            memory = br->PC;
+            memory = memory + 5;
+            br->PC = memory;
+        }
+        else
+        {
+            //instrucao da direita exite
+            br->IBR = br->MBR & BITWISE_20;
+            br->MBR = br->MBR >> 20;
+            temp4 = br->MBR;
+            br->MBR = br->MBR >> 12;
+            br->IR = br->IR | br->MBR;
+            
+            br->MBR = temp4;
+            br->MAR = br->MBR & BITWISE_12;
+        }
 
     }
 }
 
+void barramento_memoria_reg(banco_de_registradores *br, unsigned char *memory)
+{
+    //Memory access required
+    //MAR <- PC
+    br->MAR = br->PC;
+    //MBR <- M(MAR)
+    memory = br->MAR;
+    while(j < 5)
+    {
+        br->MBR = br->MBR << 8;
+        br->MBR = br->MBR | *memory;
+        memory++;
+        j++;
+    }
+}
+
+void decodificacao(banco_de_registradores *br, unsigned char *memory)
+{
     
+}
+
+void ULA(banco_de_registradores *br, unsigned char opcode, unsigned char *memory)
+{
+    
+}
+
+void barramento_reg_memoria(banco_de_registradores br, unsigned char *memory)
+{
+    //escrita dos resultados
+}
+
 int finding_address(char *str_lida, char *address)
 {
     int i = 0;
