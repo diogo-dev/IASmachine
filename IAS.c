@@ -17,15 +17,17 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 typedef struct IAS
 {
     //Program Control Unit
-    int MAR = 0; //MAR(12)
-    int IR = 0; //IR(8)
-    int IBR = 0; //IBR(20)
-    int PC = 0; //PC(12)
+    int MAR; //MAR(12)
+    int IR; //IR(8)
+    int IBR; //IBR(20)
+    int PC; //PC(12)
 
     //Arithmetic-logic unit (ALU)
-    long AC = 0; //AC(40)
-    long MQ = 0; //MQ(40)
-    long MBR = 0; //MBR(40)
+    long AC; //AC(40)
+    long MQ; //MQ(40)
+    long MBR; //MBR(40)
+
+    long OBR; // Novo registrador criado para guardar o valor do operando
 }banco_de_registradores;
 
 typedef struct ULA
@@ -42,7 +44,37 @@ typedef struct ULA
 //O UC vai ser usar essas funções do fluxograma (são as condições no fluxo -- triangulos)
 //a ULA ainda nao sei direito
 
-void fetch_cycle(banco_de_registradores *br, unsigned char *memory)
+/*
+    Vamos utilizar de flags no UC para conseguirmos mandar para a execucao qual instrucao sera realizada
+    
+    | flag_decoder = 0 Nao vai realizar a busca na memoria. E seguimos pelo lado esquerdo do fluxograma na parte de fetch cycle
+    | flag_decoder = 1 Vai realizar uma busca na memoria. E seguimos pelo lado direito do fluxograma na parte de fetch cycle
+    
+    | flag = 0 // LOAD MQ
+    | flag = 1 // LOAD MQ, M(X)
+    | flag = 2 // STOR M(X)
+    | flag = 3 // LOAD M(X)
+    | flag = 4 // LOAD -M(X)
+    | flag = 5 // LOAD |M(X)|
+    | flag = 6 // LOAD -|M(X)|
+    | flag = 7 // JUMP M(X, 0:19)
+    | flag = 8 // JUMP M(X, 20:39)
+    | flag = 9 // JUMP +M(X, 0:19)
+    | flag = 10 // JUMP +M(X, 20:39)
+    | flag = 11 // ADD M(X)
+    | flag = 12 // ADD M|(X)|
+    | flag = 13 // SUB M(X)
+    | flag = 14 // SUB |M(X)|
+    | flag = 15 // MUL M(X)
+    | flag = 16 // DIV M(X)
+    | flag = 17 // LSH
+    | flag = 18 // RSH
+    | flag = 19 // STOR M(X,8:19)
+    | flag = 20 // STOR M(X, 28:39)
+
+*/
+
+/* void fetch_cycle(banco_de_registradores *br, unsigned char *memory)
 {
     //Is next instruction in IBR ?
     if(br->IBR != 0)
@@ -108,7 +140,7 @@ void fetch_cycle(banco_de_registradores *br, unsigned char *memory)
 
     }
 }
-
+ */
 void barramento_memoria_reg(banco_de_registradores *br, unsigned char *memory)
 {
     //Memory access required
@@ -116,6 +148,7 @@ void barramento_memoria_reg(banco_de_registradores *br, unsigned char *memory)
     br->MAR = br->PC;
     //MBR <- M(MAR)
     memory = br->MAR;
+    int j = 0;
     while(j < 5)
     {
         br->MBR = br->MBR << 8;
@@ -125,9 +158,163 @@ void barramento_memoria_reg(banco_de_registradores *br, unsigned char *memory)
     }
 }
 
-void decodificacao(banco_de_registradores *br, unsigned char *memory)
+void busca(banco_de_registradores * br, unsigned char * memory, int * flag_escrita) { 
+
+    int j = 0;
+    if(br->IBR != 0) { 
+        //Memory access not required
+        //Marcamos com uma flag para sabermos o que fazer na decodificacao
+        flag_escrita = 0; 
+    }
+    else { 
+        flag_escrita = 1;
+        //Marcamos com uma flag para sabermos o que fazer na decodificacao
+        //Memory access required
+        //MAR <- PC
+        br->MAR = br->PC;
+        //MBR <- M(MAR)
+        memory = br->MAR;
+        while(j < 5)
+        {
+            br->MBR = br->MBR << 8;
+            br->MBR = br->MBR | *memory;
+            memory++;
+            j++;
+        }
+    }
+}
+
+void decodificacao(banco_de_registradores *br, unsigned char *memory, int * flag, int * flag_escrita)  
 {
-    
+    if(flag_escrita == 0)
+    { 
+        int temp1 = br->IBR; //armazena o seu valor em uma variavel temp
+        //IR <- IBR(0:7)
+        br->IBR = br->IBR >> 12;
+        br->IR = br->IR | br->IBR;
+        //MAR <- IBR(8:19)
+        br->IBR = temp1; //restaura o seu valor de 20bits
+        br->MAR = br->IBR & BITWISE_12;
+        //PC <- PC + 1
+        memory = br->PC;
+        memory = memory + 5;
+        br->PC = memory;
+    }
+    else if(flag_escrita == 1) { 
+        //Left instruction required ? usar flag
+        int temp3;
+        int temp4;
+        temp3 = br->MBR & BITWISE_20;
+        if(temp3 == 0)
+        {
+            // instrucao da direita nao existe
+            br->MBR = br->MBR >> 20;
+            temp4 = br->MBR;
+            br->MBR = br->MBR >> 12;
+            br->IR = br->IR | br->MBR;
+            
+            br->MBR = temp4;
+            br->MAR = br->MBR & BITWISE_12;
+            //PC <- PC + 1
+            memory = br->PC;
+            memory = memory + 5;
+            br->PC = memory;
+        }
+        else
+        {
+            //instrucao da direita exite
+            br->IBR = br->MBR & BITWISE_20;
+            br->MBR = br->MBR >> 20;
+            temp4 = br->MBR;
+            br->MBR = br->MBR >> 12;
+            br->IR = br->IR | br->MBR;
+            
+            br->MBR = temp4;
+            br->MAR = br->MBR & BITWISE_12;
+        }
+    }
+
+    UC(br, memory, flag);
+}
+
+void busca_dos_operandos(banco_de_registradores * br, unsigned char * memory, int * flag) { 
+
+    // OBR <- M(MAR)
+
+
+}
+
+void UC(banco_de_registradores * br, unsigned char * memory, int * flag) { 
+
+    // Na unidade de controle, nos apenas marcamos que instrucao estamos realizando utilizando uma flag
+    // para que assim seja possivel realizar a busca dos operandos e a execucao para aquela instrucao em especifico
+
+    if(br->IR == 00001010) { 
+        flag = 0;
+    }
+    else if(br-> IR == 00001001) { 
+        flag = 1;
+    }
+    else if(br-> IR == 00100001 ) { 
+        flag = 2;
+    }
+    else if(br-> IR == 00000001) { 
+        flag = 3;
+    }
+    else if(br-> IR == 00000010) { 
+        flag = 4;
+    }
+    else if(br-> IR == 00000011) { 
+        flag = 5;
+    }
+    else if(br-> IR == 00000100) { 
+        flag = 6;
+    }
+    else if(br-> IR == 00001101) { 
+        flag = 7;
+    }
+    else if(br-> IR == 00001110) { 
+        flag = 8;
+    }
+    else if(br-> IR == 00001111) { 
+        flag = 9;
+    }
+    else if(br-> IR == 00010000) { 
+        flag = 10;
+    }
+    else if(br-> IR == 00000101) { 
+        flag = 11;
+    }
+    else if(br-> IR == 00000111) { 
+        flag = 12;
+    }
+    else if(br-> IR == 00000110) { 
+        flag = 13;
+    }
+    else if(br-> IR == 00001000) { 
+        flag = 14;
+    }
+    else if(br-> IR == 00001011) { 
+        flag = 15;
+    }
+    else if(br-> IR == 00001100) { 
+        flag = 16;
+    }
+    else if(br-> IR == 00010100) { 
+        flag = 17;
+    }
+    else if(br-> IR == 00010101) { 
+        flag = 18;
+    }
+    else if(br-> IR == 00010010) { 
+        flag = 19;
+    }
+    else if(br-> IR == 00010011) { 
+        flag = 20;
+    }
+    else if(br -> IR == 11111111) { 
+        flag = 21;
+    }
 }
 
 void ULA(banco_de_registradores *br, unsigned char opcode, unsigned char *memory)
