@@ -1,10 +1,3 @@
-/*      Trabalho de Arquitetura 1
-Desenvolver um simulador do computador IAS
-
-Alunos: Diogo Felipe Soares da Silva    RA:124771
-        Arthur Henrique Bando Ueda      RA:129406
-        Gustavo Alves Glatz             RA:128592 */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,10 +34,17 @@ void resetar_registradores(banco_de_registradores *br)
     br->MBR = 0;
 }
 
-typedef enum{
-    NENHUM,
-    LOAD_
-}instrucoesIAS;
+void printar_registradores(banco_de_registradores *br)
+{
+    printf("MAR: %d\n", br->MAR);
+    printf("IR: %d\n", br->IR);
+    printf("IBR: %d\n", br->IBR);
+    printf("PC: %d\n", br->PC);
+
+    printf("AC: %ld\n", br->AC);
+    printf("MQ: %ld\n", br->MQ);
+    printf("MBR: %ld\n\n", br->MBR);
+}
 
 typedef enum{
     soma,
@@ -55,188 +55,9 @@ typedef enum{
     shift_esquerda
 }operacoesULA;
 
-typedef struct{
-    long a;
-    long b;
-    operacoesULA operacao;
-    long resultado;
-}compodenteULA;
-
-typedef enum{
-    direita, // 0
-    esquerda // 1
-}ladoInstrucao;
-
-
-/*
-    Vamos utilizar de flags no UC para conseguirmos mandar para a execucao qual instrucao sera realizada
-    
-    | flag_decoder = 0 Nao vai realizar a busca na memoria. E seguimos pelo lado esquerdo do fluxograma na parte de fetch cycle
-    | flag_decoder = 1 Vai realizar uma busca na memoria. E seguimos pelo lado direito do fluxograma na parte de fetch cycle
-    
-    | flag = 0 // LOAD MQ
-    | flag = 1 // LOAD MQ, M(X)
-    | flag = 2 // STOR M(X)
-    | flag = 3 // LOAD M(X)
-    | flag = 4 // LOAD -M(X)
-    | flag = 5 // LOAD |M(X)|
-    | flag = 6 // LOAD -|M(X)|
-    | flag = 7 // JUMP M(X, 0:19)
-    | flag = 8 // JUMP M(X, 20:39)
-    | flag = 9 // JUMP +M(X, 0:19)
-    | flag = 10 // JUMP +M(X, 20:39)
-    | flag = 11 // ADD M(X)
-    | flag = 12 // ADD M|(X)|
-    | flag = 13 // SUB M(X)
-    | flag = 14 // SUB |M(X)|
-    | flag = 15 // MUL M(X)
-    | flag = 16 // DIV M(X)
-    | flag = 17 // LSH
-    | flag = 18 // RSH
-    | flag = 19 // STOR M(X,8:19)
-    | flag = 20 // STOR M(X, 28:39)
-
-*/
-
-/* void fetch_cycle(banco_de_registradores *br, unsigned char *memory)
+void execucao(banco_de_registradores *br, unsigned char *memory)
 {
-    //Is next instruction in IBR ?
-    if(br->IBR != 0)
-    {
-        //No memory access required
-        int temp1 = br->IBR; //armazena o seu valor em uma variavel temp
-        //IR <- IBR(0:7)
-        br->IBR = br->IBR >> 12;
-        br->IR = br->IR | br->IBR;
-        //MAR <- IBR(8:19)
-        br->IBR = temp1; //restaura o seu valor de 20bits
-        br->MAR = br->IBR & BITWISE_12;
-        //PC <- PC + 1
-        memory = br->PC;
-        memory = memory + 5;
-        br->PC = memory;
-    }
-    else
-    {
-        //Memory access required
-        //MAR <- PC
-        br->MAR = br->PC;
-        //MBR <- M(MAR)
-        memory = br->MAR;
-        while(j < 5)
-        {
-            br->MBR = br->MBR << 8;
-            br->MBR = br->MBR | *memory;
-            memory++;
-            j++;
-        }
-        //Left instruction required ? usar flag
-        int temp3;
-        int temp4;
-        temp3 = br->MBR & BITWISE_20;
-        if(temp3 == 0)
-        {
-            // instrucao da direita nao existe
-            br->MBR = br->MBR >> 20;
-            temp4 = br->MBR;
-            br->MBR = br->MBR >> 12;
-            br->IR = br->IR | br->MBR;
-            
-            br->MBR = temp4;
-            br->MAR = br->MBR & BITWISE_12;
-            //PC <- PC + 1
-            memory = br->PC;
-            memory = memory + 5;
-            br->PC = memory;
-        }
-        else
-        {
-            //instrucao da direita exite
-            br->IBR = br->MBR & BITWISE_20;
-            br->MBR = br->MBR >> 20;
-            temp4 = br->MBR;
-            br->MBR = br->MBR >> 12;
-            br->IR = br->IR | br->MBR;
-            
-            br->MBR = temp4;
-            br->MAR = br->MBR & BITWISE_12;
-        }
-
-    }
-}*/
-
-void UC(banco_de_registradores * br, unsigned char * memory, int * flag) 
-{ 
-
-    // Na unidade de controle, nos apenas marcamos que instrucao estamos realizando utilizando uma flag
-    // para que assim seja possivel realizar a busca dos operandos e a execucao para aquela instrucao em especifico
-
-    if(br->IR == 00001010) { 
-        *flag = 0;
-    }
-    else if(br-> IR == 00001001) { 
-        *flag = 1;
-    }
-    else if(br-> IR == 00100001 ) { 
-        *flag = 2;
-    }
-    else if(br-> IR == 00000001) { 
-        *flag = 3;
-    }
-    else if(br-> IR == 00000010) { 
-        *flag = 4;
-    }
-    else if(br-> IR == 00000011) { 
-        *flag = 5;
-    }
-    else if(br-> IR == 00000100) { 
-        *flag = 6;
-    }
-    else if(br-> IR == 00001101) { 
-        *flag = 7;
-    }
-    else if(br-> IR == 00001110) { 
-        *flag = 8;
-    }
-    else if(br-> IR == 00001111) { 
-        *flag = 9;
-    }
-    else if(br-> IR == 00010000) { 
-        *flag = 10;
-    }
-    else if(br-> IR == 00000101) { 
-        *flag = 11;
-    }
-    else if(br-> IR == 00000111) { 
-        *flag = 12;
-    }
-    else if(br-> IR == 00000110) { 
-        *flag = 13;
-    }
-    else if(br-> IR == 00001000) { 
-        *flag = 14;
-    }
-    else if(br-> IR == 00001011) { 
-        *flag = 15;
-    }
-    else if(br-> IR == 00001100) { 
-        *flag = 16;
-    }
-    else if(br-> IR == 00010100) { 
-        *flag = 17;
-    }
-    else if(br-> IR == 00010101) { 
-        *flag = 18;
-    }
-    else if(br-> IR == 00010010) { 
-        *flag = 19;
-    }
-    else if(br-> IR == 00010011) { 
-        *flag = 20;
-    }
-    else if(br -> IR == 11111111) { 
-        *flag = 21;
-    }
+    //ainda nada
 }
 
 void ULA(banco_de_registradores *br, operacoesULA operacao, long operando_memoria)
@@ -364,11 +185,6 @@ void busca(banco_de_registradores * br, unsigned char * memory, int *flag_escrit
         //Marcamos com uma flag para sabermos o que fazer na decodificacao
         barramento_memoria_reg(br, memory, inicio_memory);
     }
-}
-
-void barramento_reg_memoria(banco_de_registradores br, unsigned char *memory)
-{
-    //escrita dos resultados
 }
 
 int finding_address(char *str_lida, char *address)
@@ -566,7 +382,7 @@ void iniciar_memory(unsigned char *memory, unsigned char *iniciar_memory)
         *memory = 0;
         memory++;
     }
-    memory = iniciar_memory;
+    memory = iniciar_memory; //volta o ponteiro da memoria para o inicio dela
 }
 
 void carregar_memoria(FILE *arqEntrada, unsigned char *memory)
@@ -720,6 +536,23 @@ void carregar_memoria(FILE *arqEntrada, unsigned char *memory)
     }
 }
 
+void imprime_posicao_memory(unsigned char *memory)
+{
+    
+    long int palavra_temp = 0;
+    int j = 0;
+
+    while(j < 5)
+    {
+        palavra_temp = palavra_temp << 8;
+        palavra_temp = palavra_temp | *memory;
+        memory++;
+        j++;
+    }
+
+    printf("elemento na memoria: %ld\n\n", palavra_temp);
+}
+
 int main(int argc, char *argv[])
 {
     unsigned char *memory = (unsigned char *)malloc(4096 * 5 * sizeof(char *));
@@ -733,7 +566,7 @@ int main(int argc, char *argv[])
     FILE *arquivo_saida;
 
     
-    if (argc == 5 && (strcmp(argv[1], "-p") == 0) && (strcmp(argv[3], "-l") == 0))
+    if (argc == 6 && (strcmp(argv[1], "-p") == 0) && (strcmp(argv[3], "-l") == 0))
     {
         printf("Argumentos válidos!\n\n");
     }
@@ -752,7 +585,22 @@ int main(int argc, char *argv[])
 
     carregar_memoria(arquivo_entrada, memory);
 
-    if ((arquivo_saida = fopen(argv[4], "w")) == NULL)
+    banco_de_registradores br;
+    resetar_registradores(&br);
+    printar_registradores(&br);
+    br.PC = atoi(argv[4]); //receber endereco da linha de comando
+    printar_registradores(&br);
+    int flag_escrita;
+    
+    busca(&br, memory, &flag_escrita, inicio_memory);
+    printar_registradores(&br);
+    printf("Flag: %d\n\n", flag_escrita);
+
+    decodificacao(&br, flag_escrita);
+    printar_registradores(&br);
+
+
+    if ((arquivo_saida = fopen(argv[5], "w")) == NULL)
     {
             printf("Erro ao abrir o aquivo!");
             exit(1);
