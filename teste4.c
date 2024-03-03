@@ -22,6 +22,46 @@ typedef struct IAS
     long MBR; //MBR(40)
 }banco_de_registradores;
 
+typedef enum{
+    soma,
+    subtracao,
+    multiplicacao,
+    divisao,
+    shift_direita,
+    shift_esquerda
+}operacoesULA;
+
+typedef enum{
+    NENHUM,
+    LOAD_MQ,
+    LOAD_MQ_MX,
+    STOR_MX,
+    LOAD_MX,
+    LOAD_MINUS_MX,
+    LOAD_PIPE_MX,
+    LOAD_MINUS_PIPE_MX,
+    JUMP_MX_0_19,
+    JUMP_MX_20_39,
+    JUMPC_MX_0_19,
+    JUMPC_MX_20_39,
+    ADD_MX,
+    ADD_PIPE_MX,
+    SUB_MX,
+    SUB_PIPE_MX,
+    MUL_MX,
+    DIV_MX,
+    LSH,
+    RSH,
+    STOR_MX_8_19,
+    STOR_MX_28_39,
+    EXIT
+}instrucoesIAS;
+
+typedef enum{
+    acesso_necessario,
+    acesso_desnecessario
+}accesso_memoria; //trocar pela flag_escrita
+
 void resetar_registradores(banco_de_registradores *br)
 {
     br->MAR = 0;
@@ -46,14 +86,81 @@ void printar_registradores(banco_de_registradores *br)
     printf("MBR: %ld\n\n", br->MBR);
 }
 
-typedef enum{
-    soma,
-    subtracao,
-    multiplicacao,
-    divisao,
-    shift_direita,
-    shift_esquerda
-}operacoesULA;
+void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS) 
+{ 
+    // Na unidade de controle, nos apenas marcamos que instrucao(opcode) estamos realizando utilizando uma flag
+    // para que assim seja possivel realizar a busca dos operandos e a execucao para aquela instrucao em especifico
+
+    if(br->IR == 0b00001010) { 
+        *instrucaoIAS = LOAD_MQ;
+    }
+    else if(br-> IR == 0b00001001) { 
+        *instrucaoIAS = LOAD_MQ_MX;
+    }
+    else if(br-> IR == 0b00100001 ) { 
+        *instrucaoIAS = STOR_MX;
+    }
+    else if(br-> IR == 0b00000001) { 
+        *instrucaoIAS = LOAD_MX;
+    }
+    else if(br-> IR == 0b00000010) { 
+        *instrucaoIAS = LOAD_MINUS_MX;
+    }
+    else if(br-> IR == 0b00000011) { 
+        *instrucaoIAS = LOAD_PIPE_MX;
+    }
+    else if(br-> IR == 0b00000100) { 
+        *instrucaoIAS = LOAD_MINUS_PIPE_MX;
+    }
+    else if(br-> IR == 0b00001101) { 
+        *instrucaoIAS = JUMP_MX_0_19;
+    }
+    else if(br-> IR == 0b00001110) { 
+        *instrucaoIAS = JUMP_MX_20_39;
+    }
+    else if(br-> IR == 0b00001111) { 
+        *instrucaoIAS = JUMPC_MX_0_19;
+    }
+    else if(br-> IR == 0b00010000) { 
+        *instrucaoIAS = JUMPC_MX_20_39;
+    }
+    else if(br-> IR == 0b0000101) { 
+        *instrucaoIAS = ADD_MX;
+    }
+    else if(br-> IR == 0b00000111) { 
+        *instrucaoIAS = ADD_PIPE_MX;
+    }
+    else if(br-> IR == 0b0000110) { 
+        *instrucaoIAS = SUB_MX;
+    }
+    else if(br-> IR == 0b00001000) { 
+        *instrucaoIAS = SUB_PIPE_MX;
+    }
+    else if(br-> IR == 0b00001011) { 
+        *instrucaoIAS = MUL_MX;
+    }
+    else if(br-> IR == 0b00001100) { 
+        *instrucaoIAS = DIV_MX;
+    }
+    else if(br-> IR == 0b00010100) { 
+        *instrucaoIAS = LSH;
+    }
+    else if(br-> IR == 0b00010101) { 
+        *instrucaoIAS = RSH;
+    }
+    else if(br-> IR == 0b00010010) { 
+        *instrucaoIAS = STOR_MX_8_19;
+    }
+    else if(br-> IR == 0b00010011) { 
+        *instrucaoIAS = STOR_MX_28_39;
+    }
+    else if(br -> IR == 0b11111111) { 
+        *instrucaoIAS = EXIT;
+    }
+    else{
+        *instrucaoIAS = NENHUM;
+    }
+}
 
 void execucao(banco_de_registradores *br, unsigned char *memory)
 {
@@ -87,7 +194,7 @@ void ULA(banco_de_registradores *br, operacoesULA operacao, long operando_memori
     }
     else if (operacao == divisao)
     {
-        palavra_80bits = br->AC / operando_memoria;
+        br->MQ = br->AC / operando_memoria;
         // Put the quotient in MQ and the remainder in AC
         // ver video de divisao de binario para entender
     }
@@ -101,10 +208,12 @@ void ULA(banco_de_registradores *br, operacoesULA operacao, long operando_memori
     }
 }
 
-void decodificacao(banco_de_registradores *br, int flag_escrita)  
+void decodificacao(banco_de_registradores *br, int flag_escrita, instrucoesIAS *instrucaoIAS)  
 {
     if(flag_escrita == 0)
     { 
+        // setar o IR
+        br->IR = 0;
         int temp1 = br->IBR; //armazena o seu valor em uma variavel temp
         //IR <- IBR(0:7)
         br->IBR = br->IBR >> 12;
@@ -114,6 +223,8 @@ void decodificacao(banco_de_registradores *br, int flag_escrita)
         br->MAR = br->IBR & BITWISE_12;
         //PC <- PC + 1
         br->PC = br->PC + 1;
+        //setar IBR
+        br->IBR = 0;
     }
     else if(flag_escrita == 1) 
     { 
@@ -133,6 +244,8 @@ void decodificacao(banco_de_registradores *br, int flag_escrita)
             br->MAR = br->MBR & BITWISE_12;
             //PC <- PC + 1
             br->PC = br->PC + 1;
+            //setar MBR
+            br->MBR = 0;
         }
         else
         {
@@ -145,10 +258,12 @@ void decodificacao(banco_de_registradores *br, int flag_escrita)
             
             br->MBR = temp4;
             br->MAR = br->MBR & BITWISE_12;
+            //setar MBR
+            br->MBR = 0;
         }
     }
 
-    //UC(br, memory, flag);
+    UC(br, instrucaoIAS);
 }
 
 void barramento_memoria_reg(banco_de_registradores *br, unsigned char *memory, unsigned char *inicio_memory)
@@ -553,6 +668,11 @@ void imprime_posicao_memory(unsigned char *memory)
     printf("elemento na memoria: %ld\n\n", palavra_temp);
 }
 
+void busca_de_operandos()
+{
+    //nada ainda
+}
+
 int main(int argc, char *argv[])
 {
     unsigned char *memory = (unsigned char *)malloc(4096 * 5 * sizeof(char *));
@@ -566,7 +686,7 @@ int main(int argc, char *argv[])
     FILE *arquivo_saida;
 
     
-    if (argc == 6 && (strcmp(argv[1], "-p") == 0) && (strcmp(argv[3], "-l") == 0))
+    /*if (argc == 6 && (strcmp(argv[1], "-p") == 0) && (strcmp(argv[3], "-l") == 0))
     {
         printf("Argumentos válidos!\n\n");
     }
@@ -575,9 +695,9 @@ int main(int argc, char *argv[])
         printf("Erro: Abra o arquivo como o seguinte exemplo:\n");
         printf("./nomeExecutavel -p arqEntrada.ias.txt -m arqSaida.ias.txt\n");
         exit(1);
-    }
+    }*/
 
-    if ((arquivo_entrada = fopen(argv[2], "r")) == NULL)
+    if ((arquivo_entrada = fopen("texto.txt", "r")) == NULL)
     {
         printf("Erro ao abrir o aquivo!");
         exit(1);
@@ -585,22 +705,32 @@ int main(int argc, char *argv[])
 
     carregar_memoria(arquivo_entrada, memory);
 
+    instrucoesIAS instrucaoIAS;
     banco_de_registradores br;
     resetar_registradores(&br);
     printar_registradores(&br);
-    br.PC = atoi(argv[4]); //receber endereco da linha de comando
+    //br.PC = atoi(argv[4]); //receber endereco da linha de comando
+    br.PC = 501;
     printar_registradores(&br);
     int flag_escrita;
-    
+    // 1 busca
     busca(&br, memory, &flag_escrita, inicio_memory);
     printar_registradores(&br);
     printf("Flag: %d\n\n", flag_escrita);
-
-    decodificacao(&br, flag_escrita);
+    // 1 decodificacao
+    decodificacao(&br, flag_escrita, &instrucaoIAS);
+    printf("Instrucao IAS: %d\n\n", instrucaoIAS);
     printar_registradores(&br);
+    // 2 busca
+    busca(&br, memory, &flag_escrita, inicio_memory);
+    printar_registradores(&br);
+    printf("Flag: %d\n\n", flag_escrita);
+    // 2 decodificacao
+    decodificacao(&br, flag_escrita, &instrucaoIAS);
+    printf("Instrucao IAS: %d\n\n", instrucaoIAS);    printar_registradores(&br);
 
 
-    if ((arquivo_saida = fopen(argv[5], "w")) == NULL)
+    if ((arquivo_saida = fopen("saida.txt", "w")) == NULL)
     {
             printf("Erro ao abrir o aquivo!");
             exit(1);

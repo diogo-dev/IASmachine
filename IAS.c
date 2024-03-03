@@ -43,7 +43,28 @@ void resetar_registradores(banco_de_registradores *br)
 
 typedef enum{
     NENHUM,
-    LOAD_
+    LOAD_MQ,
+    LOAD_MQ_MX,
+    STOR_MX,
+    LOAD_MX,
+    LOAD_MINUS_MX,
+    LOAD_PIPE_MX,
+    LOAD_MINUS_PIPE_MX,
+    JUMP_MX_0_19,
+    JUMP_MX_20_39,
+    JUMPC_MX_0_19,
+    JUMPC_MX_20_39,
+    ADD_MX,
+    ADD_PIPE_MX,
+    SUB_MX,
+    SUB_PIPE_MX,
+    MUL_MX,
+    DIV_MX,
+    LSH,
+    RSH,
+    STOR_MX_8_19,
+    STOR_MX_28_39,
+    EXIT
 }instrucoesIAS;
 
 typedef enum{
@@ -96,6 +117,18 @@ typedef enum{
     | flag = 19 // STOR M(X,8:19)
     | flag = 20 // STOR M(X, 28:39)
 
+    busca de operandos
+    flag = 1 // LOAD MQ, M(X)
+    flag = 3 // LOAD M(X)
+    flag = 4 // LOAD -M(X)
+    flag = 5 // LOAD |M(X)|
+    flag = 6 // LOAD -|M(X)|
+    flag = 11 // ADD M(X)
+    flag = 12 // ADD M|(X)|
+    flag = 13 // SUB M(X)
+    flag = 14 // SUB |M(X)|
+    flag = 15 // MUL M(X)
+    flag = 16 // DIV M(X)
 */
 
 /* void fetch_cycle(banco_de_registradores *br, unsigned char *memory)
@@ -165,77 +198,79 @@ typedef enum{
     }
 }*/
 
-void UC(banco_de_registradores * br, unsigned char * memory, int * flag) 
+void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS) 
 { 
-
-    // Na unidade de controle, nos apenas marcamos que instrucao estamos realizando utilizando uma flag
+    // Na unidade de controle, nos apenas marcamos que instrucao(opcode) estamos realizando utilizando uma flag
     // para que assim seja possivel realizar a busca dos operandos e a execucao para aquela instrucao em especifico
 
-    if(br->IR == 00001010) { 
-        *flag = 0;
+    if(br->IR == 0b00001010) { 
+        *instrucaoIAS = LOAD_MQ;
     }
-    else if(br-> IR == 00001001) { 
-        *flag = 1;
+    else if(br-> IR == 0b00001001) { 
+        *instrucaoIAS = LOAD_MQ_MX;
     }
-    else if(br-> IR == 00100001 ) { 
-        *flag = 2;
+    else if(br-> IR == 0b00100001 ) { 
+        *instrucaoIAS = STOR_MX;
     }
-    else if(br-> IR == 00000001) { 
-        *flag = 3;
+    else if(br-> IR == 0b00000001) { 
+        *instrucaoIAS = LOAD_MX;
     }
-    else if(br-> IR == 00000010) { 
-        *flag = 4;
+    else if(br-> IR == 0b00000010) { 
+        *instrucaoIAS = LOAD_MINUS_MX;
     }
-    else if(br-> IR == 00000011) { 
-        *flag = 5;
+    else if(br-> IR == 0b00000011) { 
+        *instrucaoIAS = LOAD_PIPE_MX;
     }
-    else if(br-> IR == 00000100) { 
-        *flag = 6;
+    else if(br-> IR == 0b00000100) { 
+        *instrucaoIAS = LOAD_MINUS_PIPE_MX;
     }
-    else if(br-> IR == 00001101) { 
-        *flag = 7;
+    else if(br-> IR == 0b00001101) { 
+        *instrucaoIAS = JUMP_MX_0_19;
     }
-    else if(br-> IR == 00001110) { 
-        *flag = 8;
+    else if(br-> IR == 0b00001110) { 
+        *instrucaoIAS = JUMP_MX_20_39;
     }
-    else if(br-> IR == 00001111) { 
-        *flag = 9;
+    else if(br-> IR == 0b00001111) { 
+        *instrucaoIAS = JUMPC_MX_0_19;
     }
-    else if(br-> IR == 00010000) { 
-        *flag = 10;
+    else if(br-> IR == 0b00010000) { 
+        *instrucaoIAS = JUMPC_MX_20_39;
     }
-    else if(br-> IR == 00000101) { 
-        *flag = 11;
+    else if(br-> IR == 0b0000101) { 
+        *instrucaoIAS = ADD_MX;
     }
-    else if(br-> IR == 00000111) { 
-        *flag = 12;
+    else if(br-> IR == 0b00000111) { 
+        *instrucaoIAS = ADD_PIPE_MX;
     }
-    else if(br-> IR == 00000110) { 
-        *flag = 13;
+    else if(br-> IR == 0b0000110) { 
+        *instrucaoIAS = SUB_MX;
     }
-    else if(br-> IR == 00001000) { 
-        *flag = 14;
+    else if(br-> IR == 0b00001000) { 
+        *instrucaoIAS = SUB_PIPE_MX;
     }
-    else if(br-> IR == 00001011) { 
-        *flag = 15;
+    else if(br-> IR == 0b00001011) { 
+        *instrucaoIAS = MUL_MX;
     }
-    else if(br-> IR == 00001100) { 
-        *flag = 16;
+    else if(br-> IR == 0b00001100) { 
+        *instrucaoIAS = DIV_MX;
     }
-    else if(br-> IR == 00010100) { 
-        *flag = 17;
+    else if(br-> IR == 0b00010100) { 
+        *instrucaoIAS = LSH;
     }
-    else if(br-> IR == 00010101) { 
-        *flag = 18;
+    else if(br-> IR == 0b00010101) { 
+        *instrucaoIAS = RSH;
     }
-    else if(br-> IR == 00010010) { 
-        *flag = 19;
+    else if(br-> IR == 0b00010010) { 
+        *instrucaoIAS = STOR_MX_8_19;
     }
-    else if(br-> IR == 00010011) { 
-        *flag = 20;
+    else if(br-> IR == 0b00010011) { 
+        *instrucaoIAS = STOR_MX_28_39;
     }
-    else if(br -> IR == 11111111) { 
-        *flag = 21;
+    else if(br -> IR == 0b11111111) { 
+        *instrucaoIAS = EXIT;
+    }
+    else{
+        *instrucaoIAS = NENHUM;
     }
 }
 
@@ -280,10 +315,12 @@ void ULA(banco_de_registradores *br, operacoesULA operacao, long operando_memori
     }
 }
 
-void decodificacao(banco_de_registradores *br, int flag_escrita)  
+void decodificacao(banco_de_registradores *br, int flag_escrita, instrucoesIAS *instrucaoIAS)  
 {
     if(flag_escrita == 0)
     { 
+        // setar o IR
+        br->IR = 0;
         int temp1 = br->IBR; //armazena o seu valor em uma variavel temp
         //IR <- IBR(0:7)
         br->IBR = br->IBR >> 12;
@@ -293,6 +330,8 @@ void decodificacao(banco_de_registradores *br, int flag_escrita)
         br->MAR = br->IBR & BITWISE_12;
         //PC <- PC + 1
         br->PC = br->PC + 1;
+        //setar IBR
+        br->IBR = 0;
     }
     else if(flag_escrita == 1) 
     { 
@@ -312,6 +351,8 @@ void decodificacao(banco_de_registradores *br, int flag_escrita)
             br->MAR = br->MBR & BITWISE_12;
             //PC <- PC + 1
             br->PC = br->PC + 1;
+            //setar MBR
+            br->MBR = 0;
         }
         else
         {
@@ -324,10 +365,12 @@ void decodificacao(banco_de_registradores *br, int flag_escrita)
             
             br->MBR = temp4;
             br->MAR = br->MBR & BITWISE_12;
+            //setar MBR
+            br->MBR = 0;
         }
     }
 
-    //UC(br, memory, flag);
+    UC(br, instrucaoIAS);
 }
 
 void barramento_memoria_reg(banco_de_registradores *br, unsigned char *memory, unsigned char *inicio_memory)
