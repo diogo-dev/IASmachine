@@ -802,6 +802,10 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
             *resultado = operando;
             //setar IBR
         }
+        else
+        {
+            *resultado = br->PC;
+        }
     }
     else if (instrucaoIAS == JUMPC_MX_20_39)
     {
@@ -813,6 +817,10 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
             long instrucao_direita = obter_operando(br, memory, inicio_memory) & BITWISE_20;
             *resultado <<= 20;
             *resultado = *resultado | instrucao_direita;
+        }
+        else
+        {
+            *resultado = br->PC;
         }
     }
     else if (instrucaoIAS == ADD_MX || instrucaoIAS == ADD_PIPE_MX)
@@ -858,6 +866,15 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
         *resultado = obter_operando(br, memory, inicio_memory) >> 12;
         *resultado <<= 12;
         *resultado |= operando;
+
+        if (br->PC == br->MAR)
+        {
+            if (br->IBR != 0)
+            {
+                //atualizar IBR
+                br->IBR = *resultado & BITWISE_20;
+            }
+        }
     }
     else if (instrucaoIAS == EXIT)
     {
@@ -886,20 +903,41 @@ void escrita_dos_resultados(banco_de_registradores *br, unsigned char *memory, i
     {
         escrevendo_na_memoria(br, memory, inicio_memory, resultado);
     }
-    else if (instrucaoIAS == JUMP_MX_0_19 || instrucaoIAS == JUMPC_MX_0_19)
+    else if (instrucaoIAS == JUMP_MX_0_19)
     {
         // atualizar PC
         br->PC = resultado;
         //setar IBR
         br->IBR = 0;
     }
-    else if (instrucaoIAS == JUMP_MX_20_39 || instrucaoIAS == JUMPC_MX_20_39)
+    else if (instrucaoIAS == JUMPC_MX_0_19)
+    {
+        if (br->AC >= 0)
+        {
+            // atualizar PC
+            br->PC = resultado;
+            //setar IBR
+            br->IBR = 0;
+        }
+    }
+    else if (instrucaoIAS == JUMP_MX_20_39)
     {
         // IBR <- instrucao da direita
         br->IBR = resultado & BITWISE_20;
         //atualizar PC
         resultado >>= 20;
         br->PC = resultado;
+    }
+    else if (instrucaoIAS == JUMPC_MX_20_39)
+    {
+        if (br->AC >= 0)
+        {
+            // IBR <- instrucao da direita
+            br->IBR = resultado & BITWISE_20;
+            //atualizar PC
+            resultado >>= 20;
+            br->PC = resultado;
+        }
     }
     else if (instrucaoIAS == ADD_MX || instrucaoIAS == ADD_PIPE_MX || instrucaoIAS == SUB_MX 
     || instrucaoIAS == SUB_PIPE_MX || instrucaoIAS == LSH || instrucaoIAS == RSH)
@@ -1016,7 +1054,7 @@ int main(int argc, char *argv[])
         exit(1);
     }*/
 
-    if ((arquivo_entrada = fopen("testeULA.txt", "r")) == NULL)
+    if ((arquivo_entrada = fopen("testeSTOR.txt", "r")) == NULL)
     {
         printf("Erro ao abrir o aquivo!");
         exit(1);

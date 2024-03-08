@@ -210,67 +210,67 @@ void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS)
     if(br->IR == 0b00001010) { 
         *instrucaoIAS = LOAD_MQ;
     }
-    else if(br-> IR == 0b00001001) { 
+    else if(br->IR == 0b00001001) { 
         *instrucaoIAS = LOAD_MQ_MX;
     }
-    else if(br-> IR == 0b00100001 ) { 
+    else if(br->IR == 0b00100001 ) { 
         *instrucaoIAS = STOR_MX;
     }
-    else if(br-> IR == 0b00000001) { 
+    else if(br->IR == 0b00000001) { 
         *instrucaoIAS = LOAD_MX;
     }
-    else if(br-> IR == 0b00000010) { 
+    else if(br->IR == 0b00000010) { 
         *instrucaoIAS = LOAD_MINUS_MX;
     }
-    else if(br-> IR == 0b00000011) { 
+    else if(br->IR == 0b00000011) { 
         *instrucaoIAS = LOAD_PIPE_MX;
     }
-    else if(br-> IR == 0b00000100) { 
+    else if(br->IR == 0b00000100) { 
         *instrucaoIAS = LOAD_MINUS_PIPE_MX;
     }
-    else if(br-> IR == 0b00001101) { 
+    else if(br->IR == 0b00001101) { 
         *instrucaoIAS = JUMP_MX_0_19;
     }
-    else if(br-> IR == 0b00001110) { 
+    else if(br->IR == 0b00001110) { 
         *instrucaoIAS = JUMP_MX_20_39;
     }
-    else if(br-> IR == 0b00001111) { 
+    else if(br->IR == 0b00001111) { 
         *instrucaoIAS = JUMPC_MX_0_19;
     }
-    else if(br-> IR == 0b00010000) { 
+    else if(br->IR == 0b00010000) { 
         *instrucaoIAS = JUMPC_MX_20_39;
     }
-    else if(br-> IR == 0b0000101) { 
+    else if(br->IR == 0b0000101) { 
         *instrucaoIAS = ADD_MX;
     }
-    else if(br-> IR == 0b00000111) { 
+    else if(br->IR == 0b00000111) { 
         *instrucaoIAS = ADD_PIPE_MX;
     }
-    else if(br-> IR == 0b0000110) { 
+    else if(br->IR == 0b0000110) { 
         *instrucaoIAS = SUB_MX;
     }
-    else if(br-> IR == 0b00001000) { 
+    else if(br->IR == 0b00001000) { 
         *instrucaoIAS = SUB_PIPE_MX;
     }
-    else if(br-> IR == 0b00001011) { 
+    else if(br->IR == 0b00001011) { 
         *instrucaoIAS = MUL_MX;
     }
-    else if(br-> IR == 0b00001100) { 
+    else if(br->IR == 0b00001100) { 
         *instrucaoIAS = DIV_MX;
     }
-    else if(br-> IR == 0b00010100) { 
+    else if(br->IR == 0b00010100) { 
         *instrucaoIAS = LSH;
     }
-    else if(br-> IR == 0b00010101) { 
+    else if(br->IR == 0b00010101) { 
         *instrucaoIAS = RSH;
     }
-    else if(br-> IR == 0b00010010) { 
+    else if(br->IR == 0b00010010) { 
         *instrucaoIAS = STOR_MX_8_19;
     }
-    else if(br-> IR == 0b00010011) { 
+    else if(br->IR == 0b00010011) { 
         *instrucaoIAS = STOR_MX_28_39;
     }
-    else if(br -> IR == 0b11111111) { 
+    else if(br->IR == 0b11111111) { 
         *instrucaoIAS = EXIT;
     }
     else{
@@ -278,44 +278,38 @@ void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS)
     }
 }
 
-void ULA(banco_de_registradores *br, operacoesULA operacao, long operando_memoria)
+void ULA(banco_de_registradores *br, operacoesULA operacao, long operando_memoria, __int128_t *resultado)
 {
-    __int128_t palavra_80bits,temp = 0;
+    long temp;
 
     if (operacao == soma)
     {
-        br->AC = br->AC + operando_memoria;
+        *resultado = br->AC + operando_memoria;
     }
     else if (operacao == subtracao)
     {
-        br->AC = operando_memoria - br->AC;
+        *resultado = operando_memoria - br->AC;
     }
     else if (operacao == multiplicacao)
     {
-        palavra_80bits = operando_memoria * br->MQ;
-        //colocar os bits mais significativos em AC e os menos significativos em MQ
-        temp = palavra_80bits;
-        palavra_80bits = palavra_80bits >> 40;
-        br->AC = br->AC | palavra_80bits;
-        palavra_80bits = temp;
-        br->MQ = palavra_80bits & BITWISE_40;
-        //Para juntar AC com MQ a fim de ver o resultado da multiplicacao,
-        //esse resultado tende de ser maior que o numero (em decimal): 549755813888 = 0b1000000000000000000000000000000000000000
-        //Vamos so checar MQ
+        *resultado = operando_memoria * br->MQ;
     }
     else if (operacao == divisao)
     {
-        palavra_80bits = br->AC / operando_memoria;
         // Put the quotient in MQ and the remainder in AC
-        // ver video de divisao de binario para entender
+        *resultado = br->AC / operando_memoria;
+        *resultado <<= 40;
+        temp = br->AC % operando_memoria;
+        temp = temp & BITWISE_40;  // caso temp seja negativo
+        *resultado = *resultado | temp;
     }
     else if (operacao == shift_esquerda)
     {
-        br->AC = br->AC << 1; //Multiplicar por 2
+        *resultado = br->AC << 1; //Multiplicar por 2
     }
     else
     {
-        br->AC = br->AC >> 1; //Dividir por 2
+        *resultado = br->AC >> 1; //Dividir por 2
     }
 }
 
@@ -340,20 +334,18 @@ void decodificacao(banco_de_registradores *br, accesso_memoria acesso, instrucoe
     }
     else if(acesso == necessario) 
     { 
-        //Left instruction required ? usar flag
-        int temp3;
-        int temp4;
-        temp3 = br->MBR & BITWISE_20;
+        //Left instruction required ?
+        int temp3 = br->MBR & BITWISE_20;
         if(temp3 == 0)
         {
             // instrucao da direita nao existe
             br->MBR = br->MBR >> 20;
-            temp4 = br->MBR;
-            br->MBR = br->MBR >> 12;
-            br->IR = br->IR | br->MBR;
-            
-            br->MBR = temp4;
+            //MAR <- endereco
             br->MAR = br->MBR & BITWISE_12;
+            br->MBR = br->MBR >> 12;
+            //IR <- opcode
+            br->IR = br->MBR;
+        
             //PC <- PC + 1
             br->PC = br->PC + 1;
             //setar MBR
@@ -362,14 +354,15 @@ void decodificacao(banco_de_registradores *br, accesso_memoria acesso, instrucoe
         else
         {
             //instrucao da direita exite
+            //IBR <- instrucao da direita
             br->IBR = br->MBR & BITWISE_20;
             br->MBR = br->MBR >> 20;
-            temp4 = br->MBR;
-            br->MBR = br->MBR >> 12;
-            br->IR = br->IR | br->MBR;
-            
-            br->MBR = temp4;
+            //MAR <- endereco
             br->MAR = br->MBR & BITWISE_12;
+            br->MBR = br->MBR >> 12;
+            //IR <- opcode
+            br->IR = br->MBR;
+            
             //setar MBR
             br->MBR = 0;
         }
@@ -409,241 +402,6 @@ void busca(banco_de_registradores * br, unsigned char * memory, accesso_memoria 
         *acesso = necessario;
         //Marcamos com uma flag para sabermos o que fazer na decodificacao
         barramento_memoria_reg(br, memory, inicio_memory);
-    }
-}
-
-void barramento_reg_memoria(banco_de_registradores br, unsigned char *memory)
-{
-    //escrita dos resultados
-}
-
-long obter_operando(banco_de_registradores *br, unsigned char *memory, unsigned char *inicio_memory)
-{
-    memory = inicio_memory;
-    memory = memory + 5 * (br->MAR - 1); //endereco esta em MAR
-
-    long palavra_temp = 0;
-    int j = 0;
-
-    while(j < 5)
-    {
-        palavra_temp = palavra_temp << 8;
-        palavra_temp = palavra_temp | *memory;
-        memory++;
-        j++;
-    }
-
-    return palavra_temp;
-}
-
-int eh_negativo(long *operando)
-{
-    int bit_sinal = *operando >> 39;
-    if (bit_sinal == 1)
-        return 1; //true
-    else
-        return 0; //false
-}
-
-void busca_de_operandos(banco_de_registradores *br, unsigned char *memory, instrucoesIAS instrucaoIAS, long *operando, unsigned char *inicio_memory)
-{
-    if (instrucaoIAS == LOAD_MQ)
-    {
-        *operando = br->MQ; //O operando eh o que esta em MQ
-    } 
-    else if (instrucaoIAS == LOAD_MQ_MX || instrucaoIAS == LOAD_MX || instrucaoIAS == ADD_MX || 
-    instrucaoIAS == SUB_MX || instrucaoIAS == MUL_MX || instrucaoIAS == DIV_MX)
-    {
-        *operando = obter_operando(br, memory, inicio_memory);
-        if (eh_negativo(operando))
-        {
-            //colocar 0 no bit de sinal 
-            *operando = *operando & 0b0111111111111111111111111111111111111111;
-            *operando = -*operando;
-        }
-    } 
-    else if (instrucaoIAS == STOR_MX || instrucaoIAS == LSH || instrucaoIAS == RSH)
-    {
-        *operando = br->AC; //O operando seria o que esta no AC
-    } 
-    else if (instrucaoIAS == LOAD_MINUS_MX)
-    {
-        *operando = obter_operando(br, memory, inicio_memory); 
-        if (eh_negativo(operando))
-        {
-            //colocar 0 no bit de sinal
-            *operando = *operando & 0b0111111111111111111111111111111111111111;
-        }
-        else
-        {
-            // aqui o colocar 1 seria converter o valor do operando para negativo
-            *operando = -*operando;
-        }
-    }
-    else if (instrucaoIAS == LOAD_PIPE_MX || instrucaoIAS == ADD_PIPE_MX || instrucaoIAS == SUB_PIPE_MX)
-    {
-        *operando = obter_operando(br, memory, inicio_memory);
-        if (eh_negativo(operando))
-        {
-            //colocar 0 no bit de sinal
-            *operando = *operando & 0b0111111111111111111111111111111111111111;
-        }
-    }
-    else if (instrucaoIAS == LOAD_MINUS_PIPE_MX)
-    {
-        *operando = obter_operando(br, memory, inicio_memory);
-        if (eh_negativo(operando))
-        {
-            //colocar 0 no bit de sinal
-            *operando = *operando & 0b0111111111111111111111111111111111111111; // |M(X)|
-        }
-        *operando = -*operando; // -|M(X)|
-    }
-    else if (instrucaoIAS == JUMP_MX_0_19 || instrucaoIAS == JUMP_MX_20_39 
-    || instrucaoIAS == JUMPC_MX_0_19 || instrucaoIAS == JUMPC_MX_20_39)
-    {
-        *operando = br->MAR; //O operando do jumpo eh somento o endereco que esta em MAR
-    }
-    else if (instrucaoIAS == STOR_MX_8_19 || instrucaoIAS == STOR_MX_28_39)
-    {  
-        int novo_endereco = br->AC & BITWISE_12;
-        *operando = novo_endereco;
-    }
-    else //EXIT e NENHUM
-    {
-        *operando = 0; 
-    }
-}
-
-void escrevendo_na_memoria(banco_de_registradores *br, unsigned char *memory, unsigned char *inicio_memory, long dado)
-{
-    memory = inicio_memory;
-    memory = memory + 5 * (br->MAR - 1); //endereco esta em MAR
-
-    unsigned char palavra_8bits;
-    for(int i = 4; i >= 0; i--)
-    {
-        palavra_8bits = (dado >> (8*i)) & UNSIGNED_CHAR_SIZE; 
-        *memory = palavra_8bits;
-         memory++;
-    }
-}
-
-void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS instrucaoIAS, long operando, unsigned char *inicio_memory)
-{
-    if (instrucaoIAS == LOAD_MQ || instrucaoIAS == LOAD_MX || instrucaoIAS == LOAD_MINUS_MX 
-    || instrucaoIAS == LOAD_PIPE_MX || instrucaoIAS == LOAD_MINUS_PIPE_MX)
-    {
-        br->AC = operando;
-    }
-    else if (instrucaoIAS == LOAD_MQ_MX)
-    {
-        br->MQ = operando;
-    }
-    else if (instrucaoIAS == STOR_MX)
-    {
-        if (operando < 0)
-        {
-            operando = -operando;
-            long operando_negativo = 1;
-            operando_negativo = operando_negativo << 39;
-            operando_negativo = operando_negativo | operando;
-            escrevendo_na_memoria(br, memory, inicio_memory, operando_negativo);
-        }
-        else
-        {
-            escrevendo_na_memoria(br, memory, inicio_memory, operando);
-        }
-    }
-    else if (instrucaoIAS == JUMP_MX_0_19)
-    {
-        // atualizar PC
-        br->PC = operando;
-        //setar IBR
-        br->IBR = 0;
-    }
-    else if (instrucaoIAS == JUMP_MX_20_39)
-    {
-        //atualizar PC
-        br->PC = operando;
-        // IBR <- instrucao da direita
-        long instrucao_direita = obter_operando(br, memory, inicio_memory) & BITWISE_20;
-        br->IBR = instrucao_direita;
-    }
-    else if (instrucaoIAS == JUMPC_MX_0_19)
-    {
-        if (br->AC >= 0)
-        {
-            // atualizar PC
-            br->PC = operando;
-            //setar IBR
-            br->IBR = 0;
-        }
-    }
-    else if (instrucaoIAS == JUMPC_MX_20_39)
-    {
-        if (br->AC >= 0)
-        {
-            //atualizar PC
-            br->PC = operando;
-            // IBR <- instrucao da direita
-            long instrucao_direita = obter_operando(br, memory, inicio_memory) & BITWISE_20;
-            br->IBR = instrucao_direita;
-        }
-    }
-    else if (instrucaoIAS == ADD_MX || instrucaoIAS == ADD_PIPE_MX)
-    {
-        //chamar ULA
-        ULA(br, soma, operando);
-    }
-    else if (instrucaoIAS == SUB_MX || instrucaoIAS == SUB_PIPE_MX)
-    {
-        ULA(br, subtracao, operando);
-    }
-    else if (instrucaoIAS == MUL_MX)
-    {
-        ULA(br, multiplicacao, operando);
-    }
-    else if (instrucaoIAS == DIV_MX)
-    {
-        ULA(br, divisao, operando);
-    }
-    else if (instrucaoIAS == LSH)
-    {
-        ULA(br, shift_esquerda, operando);
-    }
-    else if (instrucaoIAS == RSH)
-    {
-        ULA(br, shift_direita, operando);
-    }
-    else if (instrucaoIAS == STOR_MX_8_19)
-    {
-        long palavra_temp = obter_operando(br, memory, inicio_memory);
-        long temp1 = palavra_temp & BITWISE_20;
-        palavra_temp = palavra_temp >> 32;
-        long temp2 = palavra_temp;
-
-        long palavra_substituta = temp2;
-        palavra_substituta <<= 12;
-        palavra_substituta |= operando;
-        palavra_substituta <<= 20;
-        palavra_substituta |= temp1;
-        escrevendo_na_memoria(br, memory, inicio_memory, palavra_substituta);
-    }
-    else if (instrucaoIAS == STOR_MX_28_39)
-    {
-        long palavra_substituta = obter_operando(br, memory, inicio_memory) >> 12;
-        palavra_substituta = palavra_substituta << 12;
-        palavra_substituta = palavra_substituta | operando;
-        escrevendo_na_memoria(br, memory, inicio_memory, palavra_substituta);
-    }
-    else if (instrucaoIAS == EXIT)
-    {
-        //algo
-    }
-    else //NENHUM
-    {
-        //algo
     }
 }
 
@@ -697,15 +455,15 @@ void finding_opcode(char *str_lida, unsigned char *opcode)
     strcpy(str_lida_backup2,str_lida);
     token = strtok(str_lida,delimitador_inicial);
 
-    if (strcmp(str_lida, "LOAD-MQ") == 0) 
+    if (strcmp(str_lida, "LOAD MQ") == 0) 
     {
         *opcode = 0b00001010;
     }
-    else if (strcmp(str_lida, "LOAD-MQ,M") == 0) 
+    else if (strcmp(str_lida, "LOAD MQ,M") == 0) 
     {
         *opcode = 0b00001001;
     }
-    else if (strcmp(str_lida, "STOR-M") == 0) 
+    else if (strcmp(str_lida, "STOR M") == 0) 
     {
         token = strtok(str_lida_backup,delimitador_jump);
         if(strcmp(token,str_lida_backup2) == 0)
@@ -726,23 +484,23 @@ void finding_opcode(char *str_lida, unsigned char *opcode)
             }
         }
     }
-    else if (strcmp(str_lida, "LOAD-M") == 0) 
+    else if (strcmp(str_lida, "LOAD M") == 0) 
     {
         *opcode = 0b00000001;
     }
-    else if (strcmp(str_lida, "LOAD--M") == 0) 
+    else if (strcmp(str_lida, "LOAD -M") == 0) 
     {
         *opcode = 0b00000010;
     }
-    else if (strcmp(str_lida, "LOAD-|M") == 0) 
+    else if (strcmp(str_lida, "LOAD |M") == 0) 
     {
         *opcode = 0b00000011;
     }
-    else if (strcmp(str_lida, "LOAD--|M") == 0) 
+    else if (strcmp(str_lida, "LOAD -|M") == 0) 
     {
         *opcode = 0b00000100;
     }
-    else if (strcmp(str_lida, "JUMP-M") == 0) 
+    else if (strcmp(str_lida, "JUMP M") == 0) 
     {
         token = strtok(str_lida_backup, delimitador_jump);
         token = strtok(NULL, delimitador_final);
@@ -755,7 +513,7 @@ void finding_opcode(char *str_lida, unsigned char *opcode)
             *opcode = 0b00001110;
         }
     }
-    else if (strcmp(str_lida, "JUMP+-M") == 0) 
+    else if (strcmp(str_lida, "JUMP +M") == 0) 
     {
         token = strtok(str_lida_backup, delimitador_jump);
         token = strtok(NULL, delimitador_final);
@@ -768,27 +526,27 @@ void finding_opcode(char *str_lida, unsigned char *opcode)
             *opcode = 0b00010000;
         }
     }
-    else if (strcmp(str_lida, "ADD-M") == 0) 
+    else if (strcmp(str_lida, "ADD M") == 0) 
     {
         *opcode = 0b00000101;
     }
-    else if (strcmp(str_lida, "ADD-|M") == 0)
+    else if (strcmp(str_lida, "ADD |M") == 0)
     {
         *opcode = 0b00000111;
     }
-    else if (strcmp(str_lida, "SUB-M") == 0) 
+    else if (strcmp(str_lida, "SUB M") == 0) 
     {
         *opcode =  0b00000110;
     }
-    else if (strcmp(str_lida, "SUB-|M") == 0) 
+    else if (strcmp(str_lida, "SUB |M") == 0) 
     {
         *opcode = 0b00001000;
     }
-    else if (strcmp(str_lida, "MUL-M") == 0) 
+    else if (strcmp(str_lida, "MUL M") == 0) 
     {
         *opcode = 0b00001011;
     }
-    else if (strcmp(str_lida, "DIV-M") == 0) 
+    else if (strcmp(str_lida, "DIV M") == 0) 
     {
         *opcode = 0b00001100;
     }
@@ -842,7 +600,7 @@ void iniciar_memory(unsigned char *memory, unsigned char *iniciar_memory)
         *memory = 0;
         memory++;
     }
-    memory = iniciar_memory;
+    memory = iniciar_memory; //volta o ponteiro da memoria para o inicio dela
 }
 
 void carregar_memoria(FILE *arqEntrada, unsigned char *memory)
@@ -996,11 +754,402 @@ void carregar_memoria(FILE *arqEntrada, unsigned char *memory)
     }
 }
 
+long obter_operando(banco_de_registradores *br, unsigned char *memory, unsigned char *inicio_memory)
+{
+    //funcao parecida com o barramento, mas retorna a palavra que foi lida na memoria
+    memory = inicio_memory;
+    memory = memory + 5 * (br->MAR - 1); //endereco esta em MAR
+
+    long palavra_temp = 0;
+    int j = 0;
+
+    while(j < 5)
+    {
+        palavra_temp = palavra_temp << 8;
+        palavra_temp = palavra_temp | *memory;
+        memory++;
+        j++;
+    }
+
+    return palavra_temp;
+}
+
+int eh_negativo(long *operando)
+{
+    int bit_sinal = *operando >> 39;
+    if (bit_sinal == 1)
+        return 1; //true
+    else
+        return 0; //false
+}
+
+void busca_de_operandos(banco_de_registradores *br, unsigned char *memory, instrucoesIAS instrucaoIAS, long *operando, unsigned char *inicio_memory)
+{
+    if (instrucaoIAS == LOAD_MQ)
+    {
+        *operando = br->MQ; //O operando eh o que esta em MQ
+    } 
+    else if (instrucaoIAS == LOAD_MQ_MX || instrucaoIAS == LOAD_MX || instrucaoIAS == ADD_MX || 
+    instrucaoIAS == SUB_MX || instrucaoIAS == MUL_MX || instrucaoIAS == DIV_MX)
+    {
+        *operando = obter_operando(br, memory, inicio_memory);
+        if (eh_negativo(operando))
+        {
+            //colocar 0 no bit de sinal 
+            *operando = *operando & 0b0111111111111111111111111111111111111111;
+            *operando = -*operando;
+        }
+    } 
+    else if (instrucaoIAS == STOR_MX || instrucaoIAS == LSH || instrucaoIAS == RSH)
+    {
+        *operando = br->AC; //O operando seria o que esta no AC
+    } 
+    else if (instrucaoIAS == LOAD_MINUS_MX)
+    {
+        *operando = obter_operando(br, memory, inicio_memory); 
+        if (eh_negativo(operando))
+        {
+            //colocar 0 no bit de sinal
+            *operando = *operando & 0b0111111111111111111111111111111111111111;
+        }
+        else
+        {
+            // aqui o colocar 1 seria converter o valor do operando para negativo
+            *operando = -*operando;
+        }
+    }
+    else if (instrucaoIAS == LOAD_PIPE_MX || instrucaoIAS == ADD_PIPE_MX || instrucaoIAS == SUB_PIPE_MX)
+    {
+        *operando = obter_operando(br, memory, inicio_memory);
+        if (eh_negativo(operando))
+        {
+            //colocar 0 no bit de sinal
+            *operando = *operando & 0b0111111111111111111111111111111111111111;
+        }
+    }
+    else if (instrucaoIAS == LOAD_MINUS_PIPE_MX)
+    {
+        *operando = obter_operando(br, memory, inicio_memory);
+        if (eh_negativo(operando))
+        {
+            //colocar 0 no bit de sinal
+            *operando = *operando & 0b0111111111111111111111111111111111111111; // |M(X)|
+        }
+        *operando = -*operando; // -|M(X)|
+    }
+    else if (instrucaoIAS == JUMP_MX_0_19 || instrucaoIAS == JUMP_MX_20_39 
+    || instrucaoIAS == JUMPC_MX_0_19 || instrucaoIAS == JUMPC_MX_20_39)
+    {
+        *operando = br->MAR; //O operando do jumpo eh somento o endereco que esta em MAR
+    }
+    else if (instrucaoIAS == STOR_MX_8_19 || instrucaoIAS == STOR_MX_28_39)
+    {  
+        int novo_endereco = br->AC & BITWISE_12;
+        *operando = novo_endereco;
+    }
+    else //EXIT e NENHUM
+    {
+        *operando = 0; 
+    }
+}
+
+void escrevendo_na_memoria(banco_de_registradores *br, unsigned char *memory, unsigned char *inicio_memory, __int128_t dado)
+{
+    memory = inicio_memory;
+    memory = memory + 5 * (br->MAR - 1); //endereco esta em MAR
+
+    unsigned char palavra_8bits;
+    for(int i = 4; i >= 0; i--)
+    {
+        palavra_8bits = (dado >> (8*i)) & UNSIGNED_CHAR_SIZE; 
+        *memory = palavra_8bits;
+         memory++;
+    }
+}
+
+void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS instrucaoIAS, long operando, __int128_t *resultado, unsigned char *inicio_memory)
+{
+    //variavel "resultado" resultante da execucao da instrucao que sera mandada para a faze: escrita dos resultados
+
+    if (instrucaoIAS == LOAD_MQ || instrucaoIAS == LOAD_MX || instrucaoIAS == LOAD_MINUS_MX 
+    || instrucaoIAS == LOAD_PIPE_MX || instrucaoIAS == LOAD_MINUS_PIPE_MX)
+    {
+        *resultado = operando;
+    }
+    else if (instrucaoIAS == LOAD_MQ_MX)
+    {
+        *resultado = operando;
+    }
+    else if (instrucaoIAS == STOR_MX)
+    {
+        if (operando < 0)
+        {
+            operando = -operando;
+            *resultado = 1;
+            *resultado = *resultado << 39;
+            *resultado = *resultado | operando;
+        }
+        else
+        {
+            *resultado = operando;
+        }
+    }
+    else if (instrucaoIAS == JUMP_MX_0_19)
+    {
+        // atualizar PC
+        *resultado = operando;
+        //setar IBR
+    }
+    else if (instrucaoIAS == JUMP_MX_20_39)
+    {
+        //atualizar PC
+        *resultado = operando;
+        // IBR <- instrucao da direita
+        long instrucao_direita = obter_operando(br, memory, inicio_memory) & BITWISE_20;
+        *resultado <<= 20;
+        *resultado = *resultado | instrucao_direita;
+    }
+    else if (instrucaoIAS == JUMPC_MX_0_19)
+    {
+        if (br->AC >= 0)
+        {
+            // atualizar PC
+            *resultado = operando;
+            //setar IBR
+        }
+        else
+        {
+            *resultado = br->PC;
+        }
+    }
+    else if (instrucaoIAS == JUMPC_MX_20_39)
+    {
+        if (br->AC >= 0)
+        {
+            //atualizar PC
+            *resultado = operando;
+            // IBR <- instrucao da direita
+            long instrucao_direita = obter_operando(br, memory, inicio_memory) & BITWISE_20;
+            *resultado <<= 20;
+            *resultado = *resultado | instrucao_direita;
+        }
+        else
+        {
+            *resultado = br->PC;
+        }
+    }
+    else if (instrucaoIAS == ADD_MX || instrucaoIAS == ADD_PIPE_MX)
+    {
+        //chamar ULA
+        ULA(br, soma, operando, resultado);
+    }
+    else if (instrucaoIAS == SUB_MX || instrucaoIAS == SUB_PIPE_MX)
+    {
+        ULA(br, subtracao, operando, resultado);
+    }
+    else if (instrucaoIAS == MUL_MX)
+    {
+        ULA(br, multiplicacao, operando, resultado);
+    }
+    else if (instrucaoIAS == DIV_MX)
+    {
+        ULA(br, divisao, operando, resultado);
+    }
+    else if (instrucaoIAS == LSH)
+    {
+        ULA(br, shift_esquerda, operando, resultado);
+    }
+    else if (instrucaoIAS == RSH)
+    {
+        ULA(br, shift_direita, operando, resultado);
+    }
+    else if (instrucaoIAS == STOR_MX_8_19)
+    {
+        long palavra_temp = obter_operando(br, memory, inicio_memory);
+        int temp1 = palavra_temp & BITWISE_20;
+        palavra_temp = palavra_temp >> 32;
+        int temp2 = palavra_temp;
+
+        *resultado = temp2;
+        *resultado <<= 12;
+        *resultado |= operando;
+        *resultado <<= 20;
+        *resultado |= temp1;
+    }
+    else if (instrucaoIAS == STOR_MX_28_39)
+    {
+        *resultado = obter_operando(br, memory, inicio_memory) >> 12;
+        *resultado <<= 12;
+        *resultado |= operando;
+
+        if (br->PC == br->MAR)
+        {
+            if (br->IBR != 0)
+            {
+                //atualizar IBR
+                br->IBR = *resultado & BITWISE_20;
+            }
+        }
+    }
+    else if (instrucaoIAS == EXIT)
+    {
+        //algo
+    }
+    else //NENHUM
+    {
+        //algo
+    }
+}
+
+void escrita_dos_resultados(banco_de_registradores *br, unsigned char *memory, instrucoesIAS instrucaoIAS, long operando, long resultado, unsigned char *inicio_memory)
+{
+    //variavel "resultado" resultante da execucao da instrucao que sera mandada para a faze: escrita dos resultados
+
+    if (instrucaoIAS == LOAD_MQ || instrucaoIAS == LOAD_MX || instrucaoIAS == LOAD_MINUS_MX 
+    || instrucaoIAS == LOAD_PIPE_MX || instrucaoIAS == LOAD_MINUS_PIPE_MX)
+    {
+        br->AC = resultado;
+    }
+    else if (instrucaoIAS == LOAD_MQ_MX)
+    {
+        br->MQ = resultado;
+    }
+    else if (instrucaoIAS == STOR_MX)
+    {
+        escrevendo_na_memoria(br, memory, inicio_memory, resultado);
+    }
+    else if (instrucaoIAS == JUMP_MX_0_19)
+    {
+        // atualizar PC
+        br->PC = resultado;
+        //setar IBR
+        br->IBR = 0;
+    }
+    else if (instrucaoIAS == JUMPC_MX_0_19)
+    {
+        if (br->AC >= 0)
+        {
+            // atualizar PC
+            br->PC = resultado;
+            //setar IBR
+            br->IBR = 0;
+        }
+    }
+    else if (instrucaoIAS == JUMP_MX_20_39)
+    {
+        // IBR <- instrucao da direita
+        br->IBR = resultado & BITWISE_20;
+        //atualizar PC
+        resultado >>= 20;
+        br->PC = resultado;
+    }
+    else if (instrucaoIAS == JUMPC_MX_20_39)
+    {
+        if (br->AC >= 0)
+        {
+            // IBR <- instrucao da direita
+            br->IBR = resultado & BITWISE_20;
+            //atualizar PC
+            resultado >>= 20;
+            br->PC = resultado;
+        }
+    }
+    else if (instrucaoIAS == ADD_MX || instrucaoIAS == ADD_PIPE_MX || instrucaoIAS == SUB_MX 
+    || instrucaoIAS == SUB_PIPE_MX || instrucaoIAS == LSH || instrucaoIAS == RSH)
+    {
+        br->AC = resultado;
+    }
+    else if (instrucaoIAS == MUL_MX)
+    {
+        //colocar os bits mais significativos em AC e os menos significativos em MQ
+        if (resultado < 0)
+        {
+            br->MQ = resultado;
+        }
+        else
+        {
+            br->MQ = resultado & BITWISE_40;
+            resultado >>= 40;
+            br->AC = resultado;
+        }
+        //Para juntar AC com MQ a fim de ver o resultado da multiplicacao,
+        //esse resultado tende de ser maior que o numero (em decimal): 549755813888 = 0b1000000000000000000000000000000000000000
+        //Vamos so checar MQ
+    }
+    else if (instrucaoIAS == DIV_MX)
+    {
+        if (resultado < 0)
+        {
+            long temp = resultado & BITWISE_40; //resto da divisao
+            if(eh_negativo(&temp))
+            {
+                int temp2 = temp;
+                temp2 = ~temp2;
+                temp2++;
+                br->AC = temp2; //resto da divisao
+            }
+            else
+            {
+                br->AC = temp; //resto da divisao
+            }
+            resultado >>= 40;
+            br->MQ = resultado; // quociente da divisao
+        }
+        else
+        {
+            br->AC = resultado & BITWISE_40; //resto da divisao
+            resultado >>= 40;
+            br->MQ = resultado; // quociente da divisao
+        }
+    }
+    else if (instrucaoIAS == STOR_MX_8_19 || instrucaoIAS == STOR_MX_28_39)
+    {
+        escrevendo_na_memoria(br, memory, inicio_memory, resultado);
+    }
+    else if (instrucaoIAS == EXIT)
+    {
+        //algo
+    }
+    else //NENHUM
+    {
+        //algo
+    }
+}
+
+void ciclo_das_instrucoes(banco_de_registradores br, unsigned char *memory, unsigned char *inicio_memory)
+{
+    long operando; //retornado na BO
+    __int128_t resultado; //retornado na EX e escrito na ER
+
+    instrucoesIAS instrucaoIAS = NENHUM;
+    accesso_memoria acesso;
+
+    while(instrucaoIAS != EXIT)
+    {
+        busca(&br, memory, &acesso, inicio_memory);
+        printf("Busca, acesso memoria: %d\n\n", acesso);
+        printar_registradores(&br);
+
+        decodificacao(&br, acesso, &instrucaoIAS);
+        printf("Decodificacao, instrucao IAS: %d\n\n", instrucaoIAS);
+        printar_registradores(&br);
+
+        busca_de_operandos(&br, memory, instrucaoIAS, &operando, inicio_memory);
+        printf("Busca de operando, operando: %ld\n\n", operando);
+
+        execucao(&br, memory, instrucaoIAS, operando, &resultado, inicio_memory);
+        printf("Execucao...\n\n");
+
+        escrita_dos_resultados(&br, memory, instrucaoIAS, operando, resultado, inicio_memory);
+        printf("Escrita dos resultados:\n\n");
+        printar_registradores(&br);
+    }
+}
+
 int main(int argc, char *argv[])
 {
-    unsigned char *memory = (unsigned char *)malloc(4096 * 5 * sizeof(char *));
-    unsigned char *inicio_memory; 
-
+    unsigned char *memory = (unsigned char *)malloc(4096 * 5 * sizeof(char *)); //memoria
+    unsigned char *inicio_memory;
     inicio_memory = memory; //variavel inicio_memory recebe o endereco do inicio da memoria
 
     iniciar_memory(memory, inicio_memory); // iniciar a memoria com valor 0
@@ -1008,14 +1157,8 @@ int main(int argc, char *argv[])
     FILE *arquivo_entrada;
     FILE *arquivo_saida;
 
-    //Variaveis necessarias para a simulacao
-    banco_de_registradores br;
-    long operando;
-    accesso_memoria acesso;
-    instrucoesIAS instrucaoIAS;
-
     
-    if (argc == 5 && (strcmp(argv[1], "-p") == 0) && (strcmp(argv[3], "-l") == 0))
+    /*if (argc == 6 && (strcmp(argv[1], "-p") == 0) && (strcmp(argv[3], "-l") == 0))
     {
         printf("Argumentos válidos!\n\n");
     }
@@ -1024,19 +1167,24 @@ int main(int argc, char *argv[])
         printf("Erro: Abra o arquivo como o seguinte exemplo:\n");
         printf("./nomeExecutavel -p arqEntrada.ias.txt -m arqSaida.ias.txt\n");
         exit(1);
-    }
+    }*/
 
-    if ((arquivo_entrada = fopen(argv[2], "r")) == NULL)
+    if ((arquivo_entrada = fopen("testeSTOR.txt", "r")) == NULL)
     {
         printf("Erro ao abrir o aquivo!");
         exit(1);
     }
 
     carregar_memoria(arquivo_entrada, memory);
-    //Carregar para PC o endereco da primeira instrucao a ser executada
-    br.PC = atoi(argv[4]);
 
-    if ((arquivo_saida = fopen("memoria", "w")) == NULL)
+    banco_de_registradores br;
+    resetar_registradores(&br);
+    //br.PC = atoi(argv[4]); //receber endereco da linha de comando
+    br.PC = 501;
+    
+    ciclo_das_instrucoes(br, memory, inicio_memory);
+
+    if ((arquivo_saida = fopen("saida.txt", "w")) == NULL)
     {
             printf("Erro ao abrir o aquivo!");
             exit(1);
