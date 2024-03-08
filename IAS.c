@@ -30,29 +30,29 @@ typedef struct IAS
 }banco_de_registradores;
 
 typedef enum{
-    NENHUM,
-    LOAD_MQ,
-    LOAD_MQ_MX,
-    STOR_MX,
-    LOAD_MX,
-    LOAD_MINUS_MX,
-    LOAD_PIPE_MX,
-    LOAD_MINUS_PIPE_MX,
-    JUMP_MX_0_19,
-    JUMP_MX_20_39,
-    JUMPC_MX_0_19,
-    JUMPC_MX_20_39,
-    ADD_MX,
-    ADD_PIPE_MX,
-    SUB_MX,
-    SUB_PIPE_MX,
-    MUL_MX,
-    DIV_MX,
-    LSH,
-    RSH,
-    STOR_MX_8_19,
-    STOR_MX_28_39,
-    EXIT
+    NENHUM,                  //opcode: inexistente
+    LOAD_MQ,                 //opcode: 10
+    LOAD_MQ_MX,              //opcode: 9
+    STOR_MX,                 //opcode: 33
+    LOAD_MX,                 //opcode: 1
+    LOAD_MINUS_MX,           //opcode: 2
+    LOAD_PIPE_MX,            //opcode: 3
+    LOAD_MINUS_PIPE_MX,      //opcode: 4
+    JUMP_MX_0_19,            //opcode: 13
+    JUMP_MX_20_39,           //opcode: 14
+    JUMPC_MX_0_19,           //opcode: 15
+    JUMPC_MX_20_39,          //opcode: 16
+    ADD_MX,                  //opcode: 5
+    ADD_PIPE_MX,             //opcode: 7
+    SUB_MX,                  //opcode: 6
+    SUB_PIPE_MX,             //opcode: 8
+    MUL_MX,                  //opcode: 11
+    DIV_MX,                  //opcode: 12
+    LSH,                     //opcode: 20
+    RSH,                     //opcode: 21
+    STOR_MX_8_19,            //opcode: 18
+    STOR_MX_28_39,           //opcode: 19
+    EXIT                     //opcode: 255
 }instrucoesIAS;
 
 typedef enum{
@@ -63,11 +63,6 @@ typedef enum{
     shift_direita,
     shift_esquerda
 }operacoesULA;
-
-typedef enum{
-    direita, // 0
-    esquerda // 1
-}ladoInstrucao;
 
 typedef enum{
     desnecessario, //0
