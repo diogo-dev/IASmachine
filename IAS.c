@@ -1118,6 +1118,7 @@ void escrita_dos_resultados(banco_de_registradores *br, unsigned char *memory, i
 
 void ciclo_das_instrucoes(banco_de_registradores br, unsigned char *memory, unsigned char *inicio_memory)
 {
+    int clock = 1;
     long operando; //retornado na BO
     __int128_t resultado; //retornado na EX e escrito na ER
 
@@ -1126,6 +1127,7 @@ void ciclo_das_instrucoes(banco_de_registradores br, unsigned char *memory, unsi
 
     while(instrucaoIAS != EXIT)
     {
+        printf("-----------------clock: %d-----------------\n", clock);
         busca(&br, memory, &acesso, inicio_memory);
         printf("Busca, acesso memoria: %d\n\n", acesso);
         printar_registradores(&br);
@@ -1143,6 +1145,7 @@ void ciclo_das_instrucoes(banco_de_registradores br, unsigned char *memory, unsi
         escrita_dos_resultados(&br, memory, instrucaoIAS, operando, resultado, inicio_memory);
         printf("Escrita dos resultados:\n\n");
         printar_registradores(&br);
+        clock++;
     }
 }
 
@@ -1169,7 +1172,7 @@ int main(int argc, char *argv[])
         exit(1);
     }*/
 
-    if ((arquivo_entrada = fopen("testeSTOR.txt", "r")) == NULL)
+    if ((arquivo_entrada = fopen("determinante.txt", "r")) == NULL)
     {
         printf("Erro ao abrir o aquivo!");
         exit(1);

@@ -60,8 +60,21 @@ typedef enum{
 
 typedef enum{
     desnecessario,
-    necessario
+    necessario,
+    nenhum
 }accesso_memoria; 
+
+void manter_registradores(banco_de_registradores *br)
+{
+    br->MAR = br->MAR;
+    br->IR = br->IR;
+    br->IBR = br->IBR;
+    br->PC = br->PC;
+
+    br->AC = br->AC;
+    br->MQ = br->MQ;
+    br->MBR = br->MBR;
+}
 
 void resetar_registradores(banco_de_registradores *br)
 {
@@ -198,8 +211,9 @@ void ULA(banco_de_registradores *br, operacoesULA operacao, long operando_memori
     }
 }
 
-void decodificacao(banco_de_registradores *br, accesso_memoria acesso, instrucoesIAS *instrucaoIAS)  
+instrucoesIAS decodificacao(banco_de_registradores *br, accesso_memoria acesso)  
 {
+    instrucoesIAS instrucaoIAS;
     // setar o IR e MAR
     br->IR = 0;
     br->MAR = 0;
@@ -252,8 +266,13 @@ void decodificacao(banco_de_registradores *br, accesso_memoria acesso, instrucoe
             br->MBR = 0;
         }
     }
+    else
+    {
+        manter_registradores(br);
+    }
 
-    UC(br, instrucaoIAS);
+    UC(br, &instrucaoIAS);
+    return instrucaoIAS;
 }
 
 void barramento_memoria_reg(banco_de_registradores *br, unsigned char *memory, unsigned char *inicio_memory)
@@ -886,7 +905,7 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
     }
 }
 
-void escrita_dos_resultados(banco_de_registradores *br, unsigned char *memory, instrucoesIAS instrucaoIAS, long operando, long resultado, unsigned char *inicio_memory)
+void escrita_dos_resultados(banco_de_registradores *br, unsigned char *memory, instrucoesIAS instrucaoIAS, long resultado, unsigned char *inicio_memory)
 {
     //variavel "resultado" resultante da execucao da instrucao que sera mandada para a faze: escrita dos resultados
 
@@ -1001,7 +1020,7 @@ void escrita_dos_resultados(banco_de_registradores *br, unsigned char *memory, i
     }
 }
 
-void ciclo_das_instrucoes(banco_de_registradores br, unsigned char *memory, unsigned char *inicio_memory)
+/*void ciclo_das_instrucoes(banco_de_registradores br, unsigned char *memory, unsigned char *inicio_memory)
 {
     long operando; //retornado na BO
     __int128_t resultado; //retornado na EX e escrito na ER
@@ -1025,9 +1044,89 @@ void ciclo_das_instrucoes(banco_de_registradores br, unsigned char *memory, unsi
         execucao(&br, memory, instrucaoIAS, operando, &resultado, inicio_memory);
         printf("Execucao...\n\n");
 
-        escrita_dos_resultados(&br, memory, instrucaoIAS, operando, resultado, inicio_memory);
+        escrita_dos_resultados(&br, memory, instrucaoIAS, resultado, inicio_memory);
         printf("Escrita dos resultados:\n\n");
         printar_registradores(&br);
+    }
+}*/
+
+void dependencia_RAW(long operando, __int128_t resultado, instrucoesIAS *instrucaoIAS)
+{
+    if (operando != resultado)
+    {
+        *instrucaoIAS = NENHUM;
+    }
+}
+
+void pipeline(banco_de_registradores br, unsigned char *memory, unsigned char *inicio_memory)
+{
+    int clock = 1;
+    int MAR_temp = 0;
+    int PC_temp = 0;
+    int IBR_temp = 0;
+    long MQ_temp = 0;
+    long AC_temp = 0;
+
+    long operando = 0; //retornado na BO
+    __int128_t resultado = 0; //retornado na EX e escrito na ER
+
+    accesso_memoria acesso = nenhum;
+    instrucoesIAS atual, passada1, passada2, passada3;
+    atual = NENHUM; 
+    passada1 = NENHUM; 
+    passada2 = NENHUM; 
+    passada3 = NENHUM;
+
+    while(passada3 != EXIT)
+    {
+        printf("-----------------clock: %d-----------------\n", clock);
+        passada3 = passada2;
+        AC_temp = br.AC;
+        MQ_temp = br.MQ;
+        PC_temp = br.PC;
+        IBR_temp = br.IBR;
+        escrita_dos_resultados(&br, memory, passada3, resultado, inicio_memory);
+        printf("Escrita dos resultados:\n\n");
+        printar_registradores(&br);
+
+        passada2 = passada1;
+        if (passada2 == JUMPC_MX_0_19)
+        {
+            br.AC = AC_temp;
+            br.PC = PC_temp;
+        }
+        else if (passada2 == JUMPC_MX_20_39)
+        {
+            br.AC = AC_temp;
+            br.PC = PC_temp;
+            br.MAR = MAR_temp;
+        }
+        else if (passada2 == STOR_MX_28_39)
+        {
+            br.PC = PC_temp;
+            br.IBR = IBR_temp;
+            br.MAR = MAR_temp;
+        }
+
+        execucao(&br, memory, passada2, operando, &resultado, inicio_memory);
+        printf("Execucao...\n\n");
+
+        passada1 = atual;
+        br.MAR = MAR_temp;
+        busca_de_operandos(&br, memory, passada1, &operando, inicio_memory);
+        printf("Busca de operando, operando: %ld\n\n", operando);
+
+        //dependencia_RAW();
+
+        atual = decodificacao(&br, acesso);
+        printf("Decodificacao, instrucao IAS: %d\n\n", atual);
+        printar_registradores(&br);
+        MAR_temp = br.MAR;
+
+        busca(&br, memory, &acesso, inicio_memory);
+        printf("Busca, acesso memoria: %d\n\n", acesso);
+        printar_registradores(&br);
+        clock++;
     }
 }
 
@@ -1054,7 +1153,7 @@ int main(int argc, char *argv[])
         exit(1);
     }*/
 
-    if ((arquivo_entrada = fopen("testeSTOR.txt", "r")) == NULL)
+    if ((arquivo_entrada = fopen("testeLOAD.txt", "r")) == NULL)
     {
         printf("Erro ao abrir o aquivo!");
         exit(1);
@@ -1067,7 +1166,7 @@ int main(int argc, char *argv[])
     //br.PC = atoi(argv[4]); //receber endereco da linha de comando
     br.PC = 501;
     
-    ciclo_das_instrucoes(br, memory, inicio_memory);
+    pipeline(br, memory, inicio_memory);
 
     if ((arquivo_saida = fopen("saida.txt", "w")) == NULL)
     {
