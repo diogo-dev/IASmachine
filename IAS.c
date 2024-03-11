@@ -69,115 +69,6 @@ typedef enum{
     necessario     //1
 }accesso_memoria;
 
-/*
-    Vamos utilizar de flags no UC para conseguirmos mandar para a execucao qual instrucao sera realizada
-    
-    | flag_decoder = 0 Nao vai realizar a busca na memoria. E seguimos pelo lado esquerdo do fluxograma na parte de fetch cycle
-    | flag_decoder = 1 Vai realizar uma busca na memoria. E seguimos pelo lado direito do fluxograma na parte de fetch cycle
-    
-    | flag = 0 // LOAD MQ
-    | flag = 1 // LOAD MQ, M(X)
-    | flag = 2 // STOR M(X)
-    | flag = 3 // LOAD M(X)
-    | flag = 4 // LOAD -M(X)
-    | flag = 5 // LOAD |M(X)|
-    | flag = 6 // LOAD -|M(X)|
-    | flag = 7 // JUMP M(X, 0:19)
-    | flag = 8 // JUMP M(X, 20:39)
-    | flag = 9 // JUMP +M(X, 0:19)
-    | flag = 10 // JUMP +M(X, 20:39)
-    | flag = 11 // ADD M(X)
-    | flag = 12 // ADD M|(X)|
-    | flag = 13 // SUB M(X)
-    | flag = 14 // SUB |M(X)|
-    | flag = 15 // MUL M(X)
-    | flag = 16 // DIV M(X)
-    | flag = 17 // LSH
-    | flag = 18 // RSH
-    | flag = 19 // STOR M(X,8:19)
-    | flag = 20 // STOR M(X, 28:39)
-
-    busca de operandos
-    flag = 1 // LOAD MQ, M(X)
-    flag = 3 // LOAD M(X)
-    flag = 4 // LOAD -M(X)
-    flag = 5 // LOAD |M(X)|
-    flag = 6 // LOAD -|M(X)|
-    flag = 11 // ADD M(X)
-    flag = 12 // ADD M|(X)|
-    flag = 13 // SUB M(X)
-    flag = 14 // SUB |M(X)|
-    flag = 15 // MUL M(X)
-    flag = 16 // DIV M(X)
-*/
-
-/* void fetch_cycle(banco_de_registradores *br, unsigned char *memory)
-{
-    //Is next instruction in IBR ?
-    if(br->IBR != 0)
-    {
-        //No memory access required
-        int temp1 = br->IBR; //armazena o seu valor em uma variavel temp
-        //IR <- IBR(0:7)
-        br->IBR = br->IBR >> 12;
-        br->IR = br->IR | br->IBR;
-        //MAR <- IBR(8:19)
-        br->IBR = temp1; //restaura o seu valor de 20bits
-        br->MAR = br->IBR & BITWISE_12;
-        //PC <- PC + 1
-        memory = br->PC;
-        memory = memory + 5;
-        br->PC = memory;
-    }
-    else
-    {
-        //Memory access required
-        //MAR <- PC
-        br->MAR = br->PC;
-        //MBR <- M(MAR)
-        memory = br->MAR;
-        while(j < 5)
-        {
-            br->MBR = br->MBR << 8;
-            br->MBR = br->MBR | *memory;
-            memory++;
-            j++;
-        }
-        //Left instruction required ? usar flag
-        int temp3;
-        int temp4;
-        temp3 = br->MBR & BITWISE_20;
-        if(temp3 == 0)
-        {
-            // instrucao da direita nao existe
-            br->MBR = br->MBR >> 20;
-            temp4 = br->MBR;
-            br->MBR = br->MBR >> 12;
-            br->IR = br->IR | br->MBR;
-            
-            br->MBR = temp4;
-            br->MAR = br->MBR & BITWISE_12;
-            //PC <- PC + 1
-            memory = br->PC;
-            memory = memory + 5;
-            br->PC = memory;
-        }
-        else
-        {
-            //instrucao da direita exite
-            br->IBR = br->MBR & BITWISE_20;
-            br->MBR = br->MBR >> 20;
-            temp4 = br->MBR;
-            br->MBR = br->MBR >> 12;
-            br->IR = br->IR | br->MBR;
-            
-            br->MBR = temp4;
-            br->MAR = br->MBR & BITWISE_12;
-        }
-
-    }
-}*/
-
 void resetar_registradores(banco_de_registradores *br)
 {
     br->MAR = 0;
@@ -1127,24 +1018,15 @@ void ciclo_das_instrucoes(banco_de_registradores br, unsigned char *memory, unsi
 
     while(instrucaoIAS != EXIT)
     {
-        printf("-----------------clock: %d-----------------\n", clock);
         busca(&br, memory, &acesso, inicio_memory);
-        printf("Busca, acesso memoria: %d\n\n", acesso);
-        printar_registradores(&br);
 
         decodificacao(&br, acesso, &instrucaoIAS);
-        printf("Decodificacao, instrucao IAS: %d\n\n", instrucaoIAS);
-        printar_registradores(&br);
 
         busca_de_operandos(&br, memory, instrucaoIAS, &operando, inicio_memory);
-        printf("Busca de operando, operando: %ld\n\n", operando);
 
         execucao(&br, memory, instrucaoIAS, operando, &resultado, inicio_memory);
-        printf("Execucao...\n\n");
 
         escrita_dos_resultados(&br, memory, instrucaoIAS, operando, resultado, inicio_memory);
-        printf("Escrita dos resultados:\n\n");
-        printar_registradores(&br);
         clock++;
     }
 }
@@ -1161,7 +1043,7 @@ int main(int argc, char *argv[])
     FILE *arquivo_saida;
 
     
-    /*if (argc == 6 && (strcmp(argv[1], "-p") == 0) && (strcmp(argv[3], "-l") == 0))
+    if (argc == 7 && (strcmp(argv[1], "-p") == 0) && (strcmp(argv[3], "-l") == 0) && (strcmp(argv[5], "-m") == 0))
     {
         printf("Argumentos válidos!\n\n");
     }
@@ -1170,9 +1052,9 @@ int main(int argc, char *argv[])
         printf("Erro: Abra o arquivo como o seguinte exemplo:\n");
         printf("./nomeExecutavel -p arqEntrada.ias.txt -m arqSaida.ias.txt\n");
         exit(1);
-    }*/
+    }
 
-    if ((arquivo_entrada = fopen("determinante.txt", "r")) == NULL)
+    if ((arquivo_entrada = fopen(argv[2], "r")) == NULL)
     {
         printf("Erro ao abrir o aquivo!");
         exit(1);
@@ -1182,12 +1064,11 @@ int main(int argc, char *argv[])
 
     banco_de_registradores br;
     resetar_registradores(&br);
-    //br.PC = atoi(argv[4]); //receber endereco da linha de comando
-    br.PC = 501;
+    br.PC = atoi(argv[4]); //receber endereco da linha de comando
     
     ciclo_das_instrucoes(br, memory, inicio_memory);
 
-    if ((arquivo_saida = fopen("saida.txt", "w")) == NULL)
+    if ((arquivo_saida = fopen(argv[6], "w")) == NULL)
     {
             printf("Erro ao abrir o aquivo!");
             exit(1);
