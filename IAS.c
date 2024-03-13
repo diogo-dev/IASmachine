@@ -15,6 +15,8 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 #define BITWISE_20 1048575 //0b11111111111111111111
 #define BITWISE_40 1099511627775 //0b1111111111111111111111111111111111111111
 
+int clock = 1;
+
 typedef struct IAS
 {
     //Program Control Unit
@@ -766,15 +768,18 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
     || instrucaoIAS == LOAD_PIPE_MX || instrucaoIAS == LOAD_MINUS_PIPE_MX)
     {
         *resultado = operando;
+        clock += 2;
     }
     else if (instrucaoIAS == LOAD_MQ_MX)
     {
         *resultado = operando;
+        clock += 2;
     }
     else if (instrucaoIAS == STOR_MX)
     {
         if (operando < 0)
         {
+            //transforma o operando para negativo do IAS e escreve em M(X)
             operando = -operando;
             *resultado = 1;
             *resultado = *resultado << 39;
@@ -784,12 +789,14 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
         {
             *resultado = operando;
         }
+        clock += 4;
     }
     else if (instrucaoIAS == JUMP_MX_0_19)
     {
         // atualizar PC
         *resultado = operando;
         //setar IBR
+        clock += 5;
     }
     else if (instrucaoIAS == JUMP_MX_20_39)
     {
@@ -799,6 +806,7 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
         long instrucao_direita = obter_operando(br, memory, inicio_memory) & BITWISE_20;
         *resultado <<= 20;
         *resultado = *resultado | instrucao_direita;
+        clock += 5;
     }
     else if (instrucaoIAS == JUMPC_MX_0_19)
     {
@@ -812,6 +820,7 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
         {
             *resultado = br->PC;
         }
+        clock += 5;
     }
     else if (instrucaoIAS == JUMPC_MX_20_39)
     {
@@ -828,31 +837,38 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
         {
             *resultado = br->PC;
         }
+        clock += 5;
     }
     else if (instrucaoIAS == ADD_MX || instrucaoIAS == ADD_PIPE_MX)
     {
         //chamar ULA
         ULA(br, soma, operando, resultado);
+        clock += 3;
     }
     else if (instrucaoIAS == SUB_MX || instrucaoIAS == SUB_PIPE_MX)
     {
         ULA(br, subtracao, operando, resultado);
+        clock += 3;
     }
     else if (instrucaoIAS == MUL_MX)
     {
         ULA(br, multiplicacao, operando, resultado);
+        clock += 3;
     }
     else if (instrucaoIAS == DIV_MX)
     {
         ULA(br, divisao, operando, resultado);
+        clock += 3;
     }
     else if (instrucaoIAS == LSH)
     {
         ULA(br, shift_esquerda, operando, resultado);
+        clock += 3;
     }
     else if (instrucaoIAS == RSH)
     {
         ULA(br, shift_direita, operando, resultado);
+        clock += 3;
     }
     else if (instrucaoIAS == STOR_MX_8_19)
     {
@@ -866,6 +882,7 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
         *resultado |= operando;
         *resultado <<= 20;
         *resultado |= temp1;
+        clock += 4;
     }
     else if (instrucaoIAS == STOR_MX_28_39)
     {
@@ -881,14 +898,11 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
                 br->IBR = *resultado & BITWISE_20;
             }
         }
+        clock += 4;
     }
-    else if (instrucaoIAS == EXIT)
+    else //EXIT e NENHUM
     {
-        //algo
-    }
-    else //NENHUM
-    {
-        //algo
+        clock += 1;
     }
 }
 
@@ -997,19 +1011,10 @@ void escrita_dos_resultados(banco_de_registradores *br, unsigned char *memory, i
     {
         escrevendo_na_memoria(br, memory, inicio_memory, resultado);
     }
-    else if (instrucaoIAS == EXIT)
-    {
-        //algo
-    }
-    else //NENHUM
-    {
-        //algo
-    }
 }
 
 void ciclo_das_instrucoes(banco_de_registradores br, unsigned char *memory, unsigned char *inicio_memory)
 {
-    int clock = 1;
     long operando; //retornado na BO
     __int128_t resultado; //retornado na EX e escrito na ER
 
@@ -1027,7 +1032,6 @@ void ciclo_das_instrucoes(banco_de_registradores br, unsigned char *memory, unsi
         execucao(&br, memory, instrucaoIAS, operando, &resultado, inicio_memory);
 
         escrita_dos_resultados(&br, memory, instrucaoIAS, operando, resultado, inicio_memory);
-        clock++;
     }
 }
 
@@ -1080,7 +1084,9 @@ int main(int argc, char *argv[])
     free(memory);
     fclose(arquivo_saida);
     fclose(arquivo_entrada);
+    printf("Clocks: %d\n", clock);
     printf("Fim do programa, sucesso!\n\n");
+    
 
     return 0;
 }
