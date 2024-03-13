@@ -44,6 +44,15 @@ jump:
 stor:
 	./a.out -p testeSTOR.ias.txt -l 501 -m saidaSTOR.ias.txt
 
+pipeline:
+	gcc IASpipeline.c -o pipeline
+	./pipeline -p testeLOAD.ias.txt -l 501 -m saidaPipelineLOAD.ias.txt
+	./pipeline -p testeULA.ias.txt -l 501 -m saidaPipelineULA.ias.txt
+	./pipeline -p testeJUMP.ias.txt -l 501 -m saidaPipelineJUMP.ias.txt
+	./pipeline -p fatorial.ias.txt -l 501 -m saidaPipelineFatorial.ias.txt
+	./pipeline -p determinante.ias.txt -l 501 -m saidaPipelineDeterminante.ias.txt
+	./pipeline -p areaTrapesio.ias.txt -l 501 -m saidaPipelineTrapesio.ias.txt
+
 pipelineCompilar:
 	gcc IASpipeline.c -o pipeline
 

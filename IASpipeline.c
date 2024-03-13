@@ -75,7 +75,7 @@ typedef enum {
     possivel_STOR_MX,
     possivel_JUMPC,
     impossivel
-}dependenciaRAW;
+}dependencias;
 
 void manter_registradores(banco_de_registradores *br)
 {
@@ -133,7 +133,7 @@ long obter_operando(banco_de_registradores *br, unsigned char *memory, unsigned 
     return palavra_temp;
 }
 
-void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS, long endereco, unsigned char *memory, unsigned char *inicio_memory, int *flag_travar_pipeline, dependenciaRAW *dRAW, int *PC_anterior, int *IBR_anterior, int *flag_IBR_vazio) 
+void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS, long endereco, unsigned char *memory, unsigned char *inicio_memory, int *flag_travar_pipeline, dependencias *dRAW, int *PC_anterior, int *IBR_anterior, int *flag_IBR_vazio) 
 { 
     // Na unidade de controle, nos apenas marcamos que instrucao(opcode) estamos realizando utilizando uma flag
     // para que assim seja possivel realizar a busca dos operandos e a execucao para aquela instrucao em especifico
@@ -144,7 +144,7 @@ void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS, long endereco, 
     }
     else if(br->IR == 0b00001001) { 
         *instrucaoIAS = LOAD_MQ_MX;
-         if (*dRAW == possivel_STOR_MX)
+        if (*dRAW == possivel_STOR_MX)
         {
             if (endereco == br->MAR)
             {
@@ -168,6 +168,10 @@ void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS, long endereco, 
             {
                 *flag_travar_pipeline = 1;
             }
+            /*if (endereco == br->PC)
+            {
+                *flag_travar_pipeline = 1;
+            }*/
         }
         else
         {
@@ -239,12 +243,12 @@ void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS, long endereco, 
         //armazenar valor antigo de PC
         *PC_anterior = br->PC;
         //verificar de o JUMP + eh a 1 ou 2 instrucao
-        if (br->IBR == 0)
+        if (br->IBR == 0) // 2 instrucao
         {
             *PC_anterior++;
             *flag_IBR_vazio = 1;
         }
-        else
+        else // 1 instrucao
         {
             *IBR_anterior = br->IBR;
         }
@@ -259,12 +263,12 @@ void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS, long endereco, 
         //armazenar valor antigo de PC
         *PC_anterior = br->PC;
         //verificar de o JUMP + eh a 1 ou 2 instrucao
-        if (br->IBR == 0)
+        if (br->IBR == 0) // 2 instrucao
         {
             *PC_anterior++;
             *flag_IBR_vazio = 1;
         }
-        else
+        else // 1 instrucao
         {
             *IBR_anterior = br->IBR;
             *flag_IBR_vazio = 0;
@@ -277,26 +281,88 @@ void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS, long endereco, 
     }
     else if(br->IR == 0b0000101) { 
         *instrucaoIAS = ADD_MX;
-        *dRAW = impossivel;
+        if (*dRAW == possivel_STOR_MX)
+        {
+            if (endereco == br->MAR)
+            {
+                *flag_travar_pipeline = 1;
+            }
+
+        }
+        else
+        {
+            *dRAW = impossivel;
+        }
     }
     else if(br->IR == 0b00000111) { 
         *instrucaoIAS = ADD_PIPE_MX;
+        if (*dRAW == possivel_STOR_MX)
+        {
+            if (endereco == br->MAR)
+            {
+                *flag_travar_pipeline = 1;
+            }
+        }
+        else
+        {
+            *dRAW = impossivel;
+        }
     }
     else if(br->IR == 0b0000110) { 
         *instrucaoIAS = SUB_MX;
-        *dRAW = impossivel;
+        if (*dRAW == possivel_STOR_MX)
+        {
+            if (endereco == br->MAR)
+            {
+                *flag_travar_pipeline = 1;
+            }
+        }
+        else
+        {
+            *dRAW = impossivel;
+        }
     }
     else if(br->IR == 0b00001000) { 
         *instrucaoIAS = SUB_PIPE_MX;
-        *dRAW = impossivel;
+        if (*dRAW == possivel_STOR_MX)
+        {
+            if (endereco == br->MAR)
+            {
+                *flag_travar_pipeline = 1;
+            }
+        }
+        else
+        {
+            *dRAW = impossivel;
+        }
     }
     else if(br->IR == 0b00001011) { 
         *instrucaoIAS = MUL_MX;
-        *dRAW = impossivel;
+        if (*dRAW == possivel_STOR_MX)
+        {
+            if (endereco == br->MAR)
+            {
+                *flag_travar_pipeline = 1;
+            }
+        }
+        else
+        {
+            *dRAW = impossivel;
+        }
     }
     else if(br->IR == 0b00001100) { 
         *instrucaoIAS = DIV_MX;
-        *dRAW = impossivel;
+        if (*dRAW == possivel_STOR_MX)
+        {
+            if (endereco == br->MAR)
+            {
+                *flag_travar_pipeline = 1;
+            }
+        }
+        else
+        {
+            *dRAW = impossivel;
+        }
     }
     else if(br->IR == 0b00010100) { 
         *instrucaoIAS = LSH;
@@ -308,11 +374,35 @@ void UC(banco_de_registradores *br, instrucoesIAS *instrucaoIAS, long endereco, 
     }
     else if(br->IR == 0b00010010) { 
         *instrucaoIAS = STOR_MX_8_19;
-        *dRAW = impossivel;
+        *dRAW = possivel_STOR_MX;
+        //armazenar valor antigo de PC
+        *PC_anterior = br->PC;
+        //verificar de o STOR eh a 1 ou 2 instrucao
+        if (br->IBR == 0) // 2 instrucao
+        {
+            *flag_IBR_vazio = 1;
+        }
+        else
+        {
+            *IBR_anterior = br->IBR;
+            *flag_IBR_vazio = 0;
+        }
     }
     else if(br->IR == 0b00010011) { 
         *instrucaoIAS = STOR_MX_28_39;
-        *dRAW = impossivel;
+        *dRAW = possivel_STOR_MX;
+        //armazenar valor antigo de PC
+        *PC_anterior = br->PC;
+        //verificar de o STOR eh a 1 ou 2 instrucao
+        if (br->IBR != 0) // 1 instrucao
+        {
+            *IBR_anterior = br->IBR;
+            *flag_IBR_vazio = 0;
+        }
+        else
+        {
+            *flag_IBR_vazio = 1;
+        }
     }
     else if(br->IR == 0b11111111) { 
         *instrucaoIAS = EXIT;
@@ -355,7 +445,7 @@ void ULA(banco_de_registradores *br, operacoesULA operacao, long operando_memori
     }
 }
 
-instrucoesIAS decodificacao(banco_de_registradores *br, accesso_memoria acesso, long endereco, unsigned char *memory, unsigned char *inicio_memory, int *flag_travar_pipeline, dependenciaRAW *dRAW, int *PC_anterior, int *IBR_anterior, int *flag_IBR_vazio)  
+instrucoesIAS decodificacao(banco_de_registradores *br, accesso_memoria acesso, long endereco, unsigned char *memory, unsigned char *inicio_memory, int *flag_travar_pipeline, dependencias *dRAW, int *PC_anterior, int *IBR_anterior, int *flag_IBR_vazio)  
 {
     instrucoesIAS instrucaoIAS;
     // setar o IR e MAR
@@ -880,6 +970,7 @@ void busca_de_operandos(banco_de_registradores *br, unsigned char *memory, unsig
     {  
         int novo_endereco = br->AC & BITWISE_12;
         *operando = novo_endereco;
+        *endereco = br->MAR;
     }
     else //EXIT e NENHUM
     {
@@ -1026,6 +1117,11 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
         *resultado <<= 20;
         *resultado |= temp1;
 
+        /*if (br->PC == endereco)
+        {
+            limpar_pipeline(br, PC_anterior, atual, acesso, IBR_anterior, flag_IBR_vazio, dRAW);
+        }*/
+
         clock += 4;
     }
     else if (instrucaoIAS == STOR_MX_28_39)
@@ -1034,14 +1130,10 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
         *resultado <<= 12;
         *resultado |= operando;
 
-        if (br->PC == br->MAR)
+        /*if ((br->PC - 1) == endereco)
         {
-            if (br->IBR != 0)
-            {
-                //atualizar IBR
-                br->IBR = *resultado & BITWISE_20;
-            }
-        }
+           limpar_pipeline(br, PC_anterior, atual, acesso, IBR_anterior, flag_IBR_vazio, dRAW);
+        }*/
 
         clock += 4;
     }
@@ -1051,7 +1143,7 @@ void execucao(banco_de_registradores *br, unsigned char *memory, instrucoesIAS i
     }
 }
 
-void escrita_dos_resultados(banco_de_registradores *br, unsigned char *memory, unsigned char *inicio_memory, instrucoesIAS instrucaoIAS, long resultado, long endereco, int *flag_travar_pipeline)
+void escrita_dos_resultados(unsigned char *memory, unsigned char *inicio_memory, instrucoesIAS instrucaoIAS, long resultado, long endereco, int *flag_travar_pipeline)
 {
     //variavel "resultado" resultante da execucao da instrucao que sera mandada para a faze: escrita dos resultados
 
@@ -1071,6 +1163,7 @@ void escrita_dos_resultados(banco_de_registradores *br, unsigned char *memory, u
     else if (instrucaoIAS == STOR_MX_8_19 || instrucaoIAS == STOR_MX_28_39)
     {
         escrevendo_na_memoria(endereco, memory, inicio_memory, resultado);
+        *flag_travar_pipeline = 0;
     }
 }
 
@@ -1080,7 +1173,7 @@ void pipeline(banco_de_registradores br, unsigned char *memory, unsigned char *i
     int PC_anterior = 0;
     int IBR_anterior = 0;
 
-    dependenciaRAW dRAW = impossivel;
+    dependencias dRAW = impossivel;
     int flag_travar_pipeline = 0;
     int flag_IBR_vazio = 0;
 
@@ -1097,16 +1190,12 @@ void pipeline(banco_de_registradores br, unsigned char *memory, unsigned char *i
 
     while(passada3 != EXIT)
     {
-        printf("-----------------clock: %d-----------------\n", clock);
         passada3 = passada2;
-        escrita_dos_resultados(&br, memory, inicio_memory, passada3, resultado, endereco, &flag_travar_pipeline);
-        printf("Escrita dos resultados:\n\n");
-        printar_registradores(&br);
+        escrita_dos_resultados(memory, inicio_memory, passada3, resultado, endereco, &flag_travar_pipeline);
 
         passada2 = passada1;
-
-        execucao(&br, memory, passada2, operando, &resultado, inicio_memory, PC_anterior, &atual, &acesso, IBR_anterior, flag_IBR_vazio);
-        printf("Execucao...\n\n");
+        execucao(&br, memory, passada2, operando, &resultado, inicio_memory, PC_anterior, 
+        &atual, &acesso, IBR_anterior, flag_IBR_vazio);
 
         //dependencia_RAW;
         if (flag_travar_pipeline)
@@ -1116,7 +1205,6 @@ void pipeline(banco_de_registradores br, unsigned char *memory, unsigned char *i
 
         br.MAR = MAR_temp;
         busca_de_operandos(&br, memory, inicio_memory, passada1, &operando, &endereco);
-        printf("Busca de operando, operando: %ld\n\n", operando);
 
         //dependencia_RAW;
         if (flag_travar_pipeline != 1)
@@ -1125,13 +1213,9 @@ void pipeline(banco_de_registradores br, unsigned char *memory, unsigned char *i
                 flag_travar_pipeline = 1;
 
             atual = decodificacao(&br, acesso, endereco, memory, inicio_memory, &flag_travar_pipeline, &dRAW, &PC_anterior, &IBR_anterior, &flag_IBR_vazio);
-            printf("Decodificacao, instrucao IAS: %d\n\n", atual);
-            printar_registradores(&br);
             MAR_temp = br.MAR;
 
             busca(&br, memory, &acesso, inicio_memory);
-            printf("Busca, acesso memoria: %d\n\n", acesso);
-            printar_registradores(&br);
         }
 
     }
@@ -1185,6 +1269,7 @@ int main(int argc, char *argv[])
     free(memory);
     fclose(arquivo_saida);
     fclose(arquivo_entrada);
+    printf("Clocks: %d\n", clock);
     printf("Fim do programa, sucesso!\n\n");
 
     return 0;

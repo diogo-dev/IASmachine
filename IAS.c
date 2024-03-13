@@ -15,7 +15,7 @@ Alunos: Diogo Felipe Soares da Silva    RA:124771
 #define BITWISE_20 1048575 //0b11111111111111111111
 #define BITWISE_40 1099511627775 //0b1111111111111111111111111111111111111111
 
-int clock = 1;
+int clock = 0;
 
 typedef struct IAS
 {
