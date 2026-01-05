@@ -17,3 +17,8 @@
    <img src='/instructions.png' width=700/>
   </td>
 </table>
+
+<h2></h2>
+<p>The detailed explanations (in portuguese) of various algorithms implemented in IAS machine code, including factorial, determinant calculation, trapezoid area, bubble sort, binary search, and matrix multiplication are described in the 'explicacao.txt' file</p>
+
+<p>Thank you for reading this readme file and for your interest in my project :)</p>
